@@ -1,0 +1,4 @@
+# Keep the frozen evidence and its SHA-256 sums byte-identical on every OS.
+* -text
+*.pdf binary
+*.zip binary

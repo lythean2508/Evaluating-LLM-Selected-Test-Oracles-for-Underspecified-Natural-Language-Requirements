@@ -1,0 +1,14 @@
+[
+  {"id":"R01","service":"Free shipping","exact":"The service returns A when x is at least 5. Otherwise it returns B.","partial":"The service returns A when x is on the upper side of 5. The equality rule is unspecified. Below 5 it returns B."},
+  {"id":"R02","service":"Booking window","exact":"The service returns B when x is below 6. Otherwise it returns C.","partial":"The service returns B when x is on the lower side of 6. The equality rule is unspecified. Above 6 it returns C."},
+  {"id":"R03","service":"Claim triage","exact":"The service returns C when x is above 4. Otherwise it returns A.","partial":"The service returns C when x is on the upper side of 4. The equality rule is unspecified. Below 4 it returns A."},
+  {"id":"R04","service":"Vehicle entry","exact":"The service returns A when x is at most 7. Otherwise it returns C.","partial":"The service returns A when x is on the lower side of 7. The equality rule is unspecified. Above 7 it returns C."},
+  {"id":"R05","service":"Account points","exact":"The service returns B when x is at least 4. Otherwise it returns A.","partial":"The service returns B when x is at least an unspecified integer cutoff. Otherwise it returns A."},
+  {"id":"R06","service":"Parcel limit","exact":"The service returns C when x is at most 6. Otherwise it returns B.","partial":"The service returns C when x is at most an unspecified integer cutoff. Otherwise it returns B."},
+  {"id":"R07","service":"Ticket quota","exact":"The service returns A when x is below 3. Otherwise it returns B.","partial":"The service returns A when x is below an unspecified integer cutoff. Otherwise it returns B."},
+  {"id":"R08","service":"Energy alert","exact":"The service returns B when x is above 7. Otherwise it returns C.","partial":"The service returns B when x is above an unspecified integer cutoff. Otherwise it returns C."},
+  {"id":"R09","service":"Coupon redemption","exact":"The service returns C when x is at least 3. Otherwise it returns A.","partial":"The service returns C when x is at least 3. Otherwise it returns a different label, which is unspecified."},
+  {"id":"R10","service":"Storage allocation","exact":"The service returns A when x is at most 5. Otherwise it returns C.","partial":"The service returns A when x is at most 5. Otherwise it returns a different label, which is unspecified."},
+  {"id":"R11","service":"Review priority","exact":"The service returns B when x is above 6. Otherwise it returns A.","partial":"The service returns B when x is above 6. Otherwise it returns a different label, which is unspecified."},
+  {"id":"R12","service":"Delivery capacity","exact":"The service returns C when x is below 4. Otherwise it returns B.","partial":"The service returns C when x is below 4. Otherwise it returns a different label, which is unspecified."}
+]

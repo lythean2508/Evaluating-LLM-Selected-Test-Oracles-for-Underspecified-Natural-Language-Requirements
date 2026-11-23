@@ -1,0 +1,26 @@
+{
+  "id": 6,
+  "service": "fastapi",
+  "requirement_vague": "Update a items title and description as the owner. Confirm the update succeeds and the item retains the same id and owner.",
+  "requirement_precise": "Authenticate as a superuser with username 'admin@example.com' and password 'password123', create a new item, then update the item's title and description using the superuser credentials. Verify that the update operation returns HTTP status code 200, and the response body contains the updated title and description fields matching the input, as well as the item's id and owner_id fields matching the original item.",
+  "mutants": [
+    {
+      "file": "backend/app/api/routes/items.py",
+      "line": 71,
+      "original": "@router.put(\"/{id}\", response_model=ItemPublic)",
+      "mutated": "@router.put(\"/{id}\", response_model=ItemPublic, status_code=400)"
+    },
+    {
+      "file": "backend/app/api/routes/items.py",
+      "line": null,
+      "original": "    item.sqlmodel_update(update_dict)\n    session.add(item)\n    session.commit()\n    session.refresh(item)\n    return item",
+      "mutated": "    item.sqlmodel_update(update_dict)\n    session.add(item)\n    session.commit()\n    session.refresh(item)\n    item.title = \"WRONG_TITLE\"\n    return item"
+    },
+    {
+      "file": "backend/app/api/routes/items.py",
+      "line": null,
+      "original": "    item.sqlmodel_update(update_dict)\n    session.add(item)\n    session.commit()\n    session.refresh(item)\n    return item",
+      "mutated": "    item.sqlmodel_update(update_dict)\n    session.add(item)\n    session.commit()\n    session.refresh(item)\n    import uuid as uuid_lib\n    item.id = uuid_lib.UUID('00000000-0000-0000-0000-000000000001')\n    return item"
+    }
+  ]
+}

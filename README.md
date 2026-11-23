@@ -23,20 +23,26 @@ python verify_paper_results.py score
 On Windows with a configured Python launcher, the command can also be written as follows.
 
 ```powershell
-py -3.12 .\verify_paper_results.py score
+py -3.14 .\verify_paper_results.py score
 ```
 
 The verifier extracts the archives into a temporary directory, reruns their scoring programs, and compares the recomputed summaries with the frozen summaries. Expected output includes 58/126, 0/126, 29/126, and 42/42 for the controlled study and all six rows of the API results table. The final PASS message confirms a successful replay. The script prints the replay location for inspection.
 
 The numeric observations and model responses come from the original pilot runs. The revised manuscript adds interpretation and a future evaluation protocol. A larger-model comparison and independent human annotation remain proposed work.
 
-## Live API example
+## Live HTTP demonstration
 
-The `live` mode additionally requires Docker Desktop with a running Linux Engine, the full frozen RESTestBench checkout, the API observation scripts, a Python environment with their dependencies, and the prepared backend and PostgreSQL images. The two small data archives provide the evidence needed for rescoring.
+The complete local demonstration source is now included in `http-demo-source.zip`. The root launcher verifies its SHA-256 digest, extracts a local runtime directory and generates demo settings. It no longer needs a sibling `Research/HTTP-Demo` directory from the author's computer.
 
-The verifier searches for the existing experiment workspace in a `work` directory beside the script, a `work` directory beside the script's parent, or beside the Python virtual environment. The workspace must contain `restest-extension/observe.py` and the frozen `RESTestBench/services/fastapi/working/docker-compose.codex.yml` configuration. With that workspace and environment configured, run `python verify_paper_results.py live`.
+On Windows, use Python 3.12 or later (Python 3.14 was tested), Docker Desktop and the Linux Engine. From this repository directory, run:
 
-The example should return HTTP 400 with `Not enough permissions` on the original service and HTTP 400 with `Item not found` on the message-changing mutant. The precise oracle's FAIL on the mutant is the expected fault-detection event.
+```powershell
+py -3.14 .\http_demo.py --interactive
+```
+
+Read [the Vietnamese HTTP demonstration guide](DEMO-HTTP.md) for Swagger, the two Enter-key pauses, missing-image setup and port conflicts. The demo sends real HTTP for requirement 4 and one message-changing mutant. It does not regenerate Qwen responses or rerun all aggregate experiments.
+
+The original `verify_paper_results.py score` command and frozen data archives remain unchanged. Its legacy `live` mode still requires the original experiment-workspace layout; use `http_demo.py` for the packaged, portable demonstration.
 
 ## Manuscript source
 
@@ -57,3 +63,16 @@ The score command replays saved evidence; it does not call an LLM or rerun servi
 ## Contents and third-party material
 
 `SHA256SUMS.txt` identifies the release files. The two data archives preserve their original bytes and internal provenance. See `THIRD_PARTY_NOTICES.md` for upstream licensing. No new license for the authors' original work is granted by this repository.
+
+## Repository update on 23 November 2026
+
+The existing manuscript is retained. The deferred 11-page revision and its secondary analyses are not included in this update. The repository now also includes the extracted `controlled/` and `api/` sources and evidence from the local replication folder, without Python bytecode or runtime environments.
+
+To recompute and inspect their CSV tables directly:
+
+```powershell
+py -3.14 .\controlled\study.py score
+py -3.14 .\api\restest-extension\pilot.py score
+```
+
+The summary CSV files are `controlled/results/summary.csv` and `api/restest-extension/results/summary.csv`; the API per-case details are in `api/restest-extension/results/comparison.csv`. Docker images and model weights are external dependencies, not repository files. Repository access follows the owner's GitHub visibility settings.

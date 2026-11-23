@@ -1,0 +1,26 @@
+{
+  "id": 2,
+  "service": "fastapi",
+  "requirement_vague": "Create and retrieve a Item. Ensure the retrieved item matches the created one.",
+  "requirement_precise": "Authenticate as a superuser (admin@example.com / password123), create a new item, then retrieve the item by its ID. Verify that the response status code is 200 and that the returned item's title, description, id, and owner_id exactly match those of the created item.",
+  "mutants": [
+    {
+      "file": "backend/app/api/routes/items.py",
+      "line": 44,
+      "original": "@router.get(\"/{id}\", response_model=ItemPublic)",
+      "mutated": "@router.get(\"/{id}\", response_model=ItemPublic, status_code=404)"
+    },
+    {
+      "file": "backend/app/api/routes/items.py",
+      "line": null,
+      "original": "    if not current_user.is_superuser and (item.owner_id != current_user.id):\n        raise HTTPException(status_code=400, detail=\"Not enough permissions\")\n    return item",
+      "mutated": "    if not current_user.is_superuser and (item.owner_id != current_user.id):\n        raise HTTPException(status_code=400, detail=\"Not enough permissions\")\n    item.title = \"WRONG_TITLE\"\n    return item"
+    },
+    {
+      "file": "backend/app/api/routes/items.py",
+      "line": null,
+      "original": "    if not current_user.is_superuser and (item.owner_id != current_user.id):\n        raise HTTPException(status_code=400, detail=\"Not enough permissions\")\n    return item",
+      "mutated": "    if not current_user.is_superuser and (item.owner_id != current_user.id):\n        raise HTTPException(status_code=400, detail=\"Not enough permissions\")\n    import uuid as uuid_lib\n    item.owner_id = uuid_lib.UUID('00000000-0000-0000-0000-000000000001')\n    return item"
+    }
+  ]
+}

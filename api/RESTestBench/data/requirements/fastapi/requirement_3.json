@@ -1,0 +1,20 @@
+{
+  "id": 3,
+  "service": "fastapi",
+  "requirement_vague": "Log in and attempt to read a non-existent item and confirm a not-found response.",
+  "requirement_precise": "Attempt to read an item using a non-existent item ID while authenticated as a superuser (admin@example.com / password123). Verify that the response status code is 404 and the response body contains a 'detail' field with the value 'Item not found'.",
+  "mutants": [
+    {
+      "file": "backend/app/api/routes/items.py",
+      "line": 50,
+      "original": "if not item:",
+      "mutated": "if False:"
+    },
+    {
+      "file": "backend/app/api/routes/items.py",
+      "line": 51,
+      "original": "raise HTTPException(status_code=404, detail=\"Item not found\")",
+      "mutated": "raise HTTPException(status_code=200, detail=\"Item not found\")"
+    }
+  ]
+}

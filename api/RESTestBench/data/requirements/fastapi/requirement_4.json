@@ -1,0 +1,26 @@
+{
+  "id": 4,
+  "service": "fastapi",
+  "requirement_vague": "Verify that a second user cannot read another user's item. Confirm access is denied.",
+  "requirement_precise": "Register a new user and obtain an access token via the authentication endpoint. Create an item in the system with that user. Register a second user and get its access token. Attempt to read the created item using the access token of the second user. Verify that the response status code is 400 and the response body contains a detail field with the value \"Not enough permissions\" indicating the user does not have sufficient permissions to read the item.",
+  "mutants": [
+    {
+      "file": "backend/app/api/routes/items.py",
+      "line": 52,
+      "original": "if not current_user.is_superuser and (item.owner_id != current_user.id):",
+      "mutated": "if False:"
+    },
+    {
+      "file": "backend/app/api/routes/items.py",
+      "line": 53,
+      "original": "raise HTTPException(status_code=400, detail=\"Not enough permissions\")",
+      "mutated": "raise HTTPException(status_code=200, detail=\"Not enough permissions\")"
+    },
+    {
+      "file": "backend/app/api/routes/items.py",
+      "line": 53,
+      "original": "detail=\"Not enough permissions\"",
+      "mutated": "detail=\"Item not found\""
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "id": 13,
+  "service": "fastapi",
+  "requirement_vague": "Check that log in rejects a wrong password.",
+  "requirement_precise": "Register a new user, then attempt to obtain an access token by logging in with the registered user's email but an incorrect password. Verify that the response status code is 400 and the detail message is 'Incorrect email or password'.",
+  "mutants": [
+    {
+      "file": "backend/app/crud.py",
+      "line": 44,
+      "original": "    if not verify_password(password, db_user.hashed_password):",
+      "mutated": "    if False:  # Skip password verification"
+    },
+    {
+      "file": "backend/app/api/routes/login.py",
+      "line": 35,
+      "original": "        raise HTTPException(status_code=400, detail=\"Incorrect email or password\")",
+      "mutated": "        raise HTTPException(status_code=200, detail=\"Incorrect email or password\")"
+    },
+    {
+      "file": "backend/app/api/routes/login.py",
+      "line": 35,
+      "original": "        raise HTTPException(status_code=400, detail=\"Incorrect email or password\")",
+      "mutated": "        raise HTTPException(status_code=400, detail=\"Incorrect email\")"
+    }
+  ]
+}

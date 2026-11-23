@@ -1,0 +1,26 @@
+{
+  "2": {
+    "precise": ["same_description", "same_owner", "success", "same_id", "http_200", "same_title"],
+    "vague": ["same_description", "same_owner", "success", "same_id", "same_title"]
+  },
+  "3": {
+    "precise": ["item_not_found", "http_404", "denied"],
+    "vague": ["http_404", "denied"]
+  },
+  "4": {
+    "precise": ["no_permission", "denied", "http_400"],
+    "vague": ["denied"]
+  },
+  "6": {
+    "precise": ["same_id", "updated_description", "success", "same_owner", "http_200", "updated_title"],
+    "vague": ["same_id", "updated_description", "success", "same_owner", "updated_title"]
+  },
+  "13": {
+    "precise": ["http_400", "wrong_password", "no_token", "denied"],
+    "vague": ["no_token", "denied"]
+  },
+  "34": {
+    "precise": ["success", "same_email", "can_login", "same_name", "http_200"],
+    "vague": ["success"]
+  }
+}

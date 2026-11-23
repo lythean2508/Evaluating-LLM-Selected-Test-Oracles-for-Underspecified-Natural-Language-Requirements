@@ -1,0 +1,26 @@
+{
+  "id": 34,
+  "service": "fastapi",
+  "requirement_vague": "Confirm registering a new user works as expected.",
+  "requirement_precise": "Generate a random email, a random password, and a random full name. Register a new user using the user registration endpoint with a payload containing 'email' (the generated email), 'password' (the generated password), and 'full_name' (the generated full name). Verify the response status is 200. Verify the response body 'email' equals the generated email. Verify the response body 'full_name' equals the generated full name. Then verify the user can login with the generated credentials.",
+  "mutants": [
+    {
+      "file": "backend/app/api/routes/users.py",
+      "line": null,
+      "original": "    user_create = UserCreate.model_validate(user_in)\n    user = crud.create_user(session=session, user_create=user_create)\n    return user",
+      "mutated": "    user_create = UserCreate.model_validate(user_in)\n    user = crud.create_user(session=session, user_create=user_create)\n    user.full_name = \"Wrong Name\"\n    return user"
+    },
+    {
+      "file": "backend/app/api/routes/users.py",
+      "line": null,
+      "original": "    user_create = UserCreate.model_validate(user_in)\n    user = crud.create_user(session=session, user_create=user_create)\n    return user",
+      "mutated": "    user_create = UserCreate.model_validate(user_in)\n    # Skip actual DB creation but return fake success\n    import uuid as uuid_mod\n    class FakeUser:\n        id = uuid_mod.uuid4()\n        email = user_in.email\n        full_name = user_in.full_name\n        is_active = True\n        is_superuser = False\n    return FakeUser()"
+    },
+    {
+      "file": "backend/app/api/routes/users.py",
+      "line": null,
+      "original": "@router.post(\"/signup\", response_model=UserPublic)\ndef register_user(session: SessionDep, user_in: UserRegister) -> Any:",
+      "mutated": "@router.post(\"/signup\", response_model=UserPublic, status_code=400)\ndef register_user(session: SessionDep, user_in: UserRegister) -> Any:"
+    }
+  ]
+}

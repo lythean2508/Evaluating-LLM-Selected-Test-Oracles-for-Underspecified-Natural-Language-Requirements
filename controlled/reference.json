@@ -1,0 +1,14 @@
+[
+  ["R01", ">=", 5, "A", "B", "comparator"],
+  ["R02", "<", 6, "B", "C", "comparator"],
+  ["R03", ">", 4, "C", "A", "comparator"],
+  ["R04", "<=", 7, "A", "C", "comparator"],
+  ["R05", ">=", 4, "B", "A", "cutoff"],
+  ["R06", "<=", 6, "C", "B", "cutoff"],
+  ["R07", "<", 3, "A", "B", "cutoff"],
+  ["R08", ">", 7, "B", "C", "cutoff"],
+  ["R09", ">=", 3, "C", "A", "fallback"],
+  ["R10", "<=", 5, "A", "C", "fallback"],
+  ["R11", ">", 6, "B", "A", "fallback"],
+  ["R12", "<", 4, "C", "B", "fallback"]
+]
