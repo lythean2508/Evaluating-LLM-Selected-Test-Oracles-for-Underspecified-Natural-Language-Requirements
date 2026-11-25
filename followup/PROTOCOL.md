@@ -1,5 +1,7 @@
 # Model size and frozen rules evaluation protocol
 
+The protocol below records the original plan. The completed size comparison covers FastAPI and TodoApp. The controlled-language pilot used 0.5B only. See [completed runs and deviations](README.md).
+
 The six FastAPI requirement pairs in the original pilot are the development sample for the existing text rules. The model-size comparison repeats the original controlled and API pilots with Qwen2.5-0.5B-Instruct and Qwen2.5-7B-Instruct. Both use Q4_K_M, llama.cpp b5046, the original prompts, grammars, samplers, seeds, candidate order and scoring. The API comparison rescores the same original and mutant responses. The original archived 0.5B outputs provide a replay cross-check.
 
 The rule baseline is the `rule_agrees` implementation and its `STATUS` and `ANCHORS` constants from commit `400ba16c717231aaccb562422e7a749aac3fa64b`. Preserve the entire `api/restest-extension/design.py` and `controlled/study.py` byte-for-byte. The follow-up runner verifies their SHA-256 hashes before inference or scoring.

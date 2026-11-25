@@ -14,3 +14,10 @@ Lượt kiểm tra bắt đầu từ bản clone mới của commit `238468ff2cc
 Lệnh `python verify_all.py --output verification-run` kiểm tra mã băm và tái tạo các bảng từ dữ liệu đã lưu. Để sinh lại mask, xem [lệnh và cấu hình](followup/README.md#regenerate-model-completions). Để thu lại 23 quan sát FastAPI, dùng [hướng dẫn chuẩn bị Docker và chạy observe](api/README.md).
 
 Các phép kiểm tra này xác nhận khả năng tái lập trong môi trường đã ghi. TodoApp chỉ có dữ liệu chọn assertion và nhãn status. Bằng chứng về phát hiện mutant thuộc FastAPI. Phân tích độ nhạy dùng ba cách diễn giải thay thế. Độ đồng thuận giữa người chấm vẫn cần đo độc lập.
+
+## Rà soát bản thảo sau v1.2.0
+
+- Chấm lại hai pilot và tái tạo nguyên byte năm CSV follow-up, gồm 32 hàng độ nhạy cho tám chính sách nhãn. Đối chiếu 10 bảng trong bản thảo và 12 tỷ lệ ở Hình 2 với kết quả. Bảng ví dụ R4 kiểm tra riêng mã HTTP và thông điệp lỗi.
+- Đối chiếu với commit RESTestBench được ghim. Sáu tệp yêu cầu FastAPI, đặc tả OpenAPI FastAPI và giấy phép khớp nguyên byte. Bốn cặp TodoApp khớp văn bản và phần đặc tả được trích.
+- Đọc lại dữ liệu của lần tái lập trước. Cả 120 bộ chọn Vulkan khớp theo yêu cầu, biến thể, seed và thiết lập. Cả 23 quan sát HTTP khớp theo yêu cầu và mutant. Lượt rà soát bản thảo này dùng các bản ghi đã lưu.
+- Đối chiếu 48 tài liệu tham khảo và 32 DOI với bản ghi chính thức. Sửa liên kết ClarifyGPT và bài về mơ hồ đại từ của Ezzini et al. Ghim bản arXiv v1 của Konstantinou et al. để tiêu đề khớp với phiên bản trích dẫn.
