@@ -1,0 +1,17 @@
+[
+  {
+    "name": "explicit_not_found_code",
+    "rationale": "A not-found response specifies a rejection but permits more than one exact status interpretation unless the numeric code is stated.",
+    "exclude": [{"id": 3, "variant": "vague", "checks": ["http_404"]}]
+  },
+  {
+    "name": "explicit_update_response_fields",
+    "rationale": "State obligations about the updated item do not by themselves specify which fields the PUT response must contain.",
+    "exclude": [{"id": 6, "variant": "vague", "checks": ["same_id", "same_owner", "updated_title", "updated_description"]}]
+  },
+  {
+    "name": "explicit_login_token",
+    "rationale": "An obligation that login succeeds does not establish the token-return part of a compound assertion without a stated token response.",
+    "exclude": [{"id": 34, "variant": "precise", "checks": ["can_login"]}]
+  }
+]

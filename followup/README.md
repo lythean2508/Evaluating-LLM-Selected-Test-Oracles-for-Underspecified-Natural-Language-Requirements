@@ -19,6 +19,16 @@ python followup/replay.py --output followup-replay
 
 [FastAPI summaries](results/api-summary.csv) · [FastAPI vague results by requirement](results/api-vague-filtered-by-requirement.csv) · [TodoApp summaries](results/heldout-summary.csv) · [Execution provenance](environment.json)
 
+## Label sensitivity and selector omissions
+
+Run the following command to rebuild the [eight policy results](results/label-sensitivity.csv) and the [partition of supported candidates](results/support-partition.csv).
+
+```text
+python followup/sensitivity.py --output sensitivity-replay
+```
+
+The [policy file](label-policies.json) gives the six checks affected by three interpretation choices that emerged in an exploratory AI-assisted review. The script sweeps their eight combinations, rescoring the same filtered masks with the original observations. It checks that policy `000` exactly reproduces the published scoring. The switches are assumptions for sensitivity analysis. Independent human annotation remains proposed work.
+
 ## Regenerate model completions
 
 Use [llama.cpp b5046](https://github.com/ggml-org/llama.cpp/releases/tag/b5046) and the GGUF revisions and checksums recorded in [environment.json](environment.json). Use the first 7B shard as the model argument and keep the second shard beside it. The original run used the Windows Vulkan build and the following commands. Replace the executable and weight paths with yours. The `--gpu-layers` default of `0` also supports a local CPU run on suitable hardware.

@@ -1,6 +1,6 @@
 # Nguồn cho nghiên cứu về lựa chọn test oracle từ yêu cầu chưa rõ ràng
 
-Tài liệu này đối chiếu các nhận định về hai pilot trong *Evaluating LLM-Selected Test Oracles for Underspecified Natural-Language Requirements* với gói tái lập, liệt kê đủ 34 tài liệu trong bản thảo và bổ sung các nguồn cho thí nghiệm tiếp theo và việc chọn nơi nộp bài. Thông tin hội nghị được đối chiếu ngày 25/11/2026. [Bản thảo](paper.pdf) · [BibTeX](references.bib) · [Metadata và tác giả](references.json)
+Tài liệu này đối chiếu các nhận định về hai pilot trong *Evaluating LLM-Selected Test Oracles for Underspecified Natural-Language Requirements* với gói tái lập, liệt kê đủ 40 tài liệu trong bản thảo và bổ sung các nguồn cho thí nghiệm tiếp theo và việc chọn nơi nộp bài. Thông tin hội nghị được đối chiếu ngày 25/11/2026. [Bản thảo](paper.pdf) · [BibTeX](references.bib) · [Metadata và tác giả](references.json)
 
 ## Bằng chứng cho các nhận định về bản thảo
 
@@ -39,7 +39,7 @@ Lệnh `python verify_paper_results.py score` đã chấm lại thành công d�
 
 Các khoảng 55–70% và 75–85% là ước đoán chưa có nguồn đủ để suy ra xác suất chấp nhận của bản thảo ở bất kỳ track nào. CFP cho biết phạm vi, loại bài và tiêu chí phản biện. Ưu tiên IEEE RE ở đây dựa trên độ khớp chủ đề. [Tiêu chí Research Papers của IEEE RE 2027](https://conf.researchr.org/track/RE-2027/RE-2027-papers)
 
-## Danh mục 34 nguồn trong bản thảo
+## Danh mục 40 nguồn trong bản thảo
 
 Các mục theo thứ tự trong tệp metadata đi kèm. Mục 15 dẫn đúng phiên bản mang tiêu đề mà bản thảo trích và kèm đường dẫn đến phiên bản mới. Bộ SLR-on-RBTG ở mục 33 cung cấp 267 nghiên cứu gốc để mở rộng tìm kiếm. [BibTeX](references.bib) · [Metadata](references.json)
 
@@ -91,6 +91,15 @@ Các mục theo thứ tự trong tệp metadata đi kèm. Mục 15 dẫn đúng 
 ### Độ đồng thuận giữa người gán nhãn
 
 34. **A Coefficient of Agreement for Nominal Scales** (1960). Jacob Cohen giới thiệu hệ số kappa cho hai người gán nhãn danh nghĩa. [DOI](https://doi.org/10.1177/001316446002000104)
+
+### Nguồn bổ sung cho phép so sánh và định vị đóng góp
+
+35. **Qwen2.5-7B-Instruct-GGUF** (2024). Nguồn trọng số và cấu hình của mô hình 7B trong phép so sánh ghép cặp. [Nguồn](https://huggingface.co/Qwen/Qwen2.5-7B-Instruct-GGUF)
+36. **What the Specification Did Not Say: Specification-Oracle Gaps in Test-Graded Coding-Agent Benchmarks** (2026). Phân tích khoảng cách giữa yêu cầu mô tả và test gốc dùng chấm coding agent. [Nguồn](https://arxiv.org/abs/2610.30635)
+37. **Requirements Sufficiency Gating for LLM-Assisted Automation: When Should Generation Proceed?** (2026). Đánh giá cơ chế quyết định có cho phép sinh toàn bộ đầu ra từ một yêu cầu hay không. [Nguồn](https://github.com/PedramMadani/spec-gate) · [DOI](https://doi.org/10.1109/RE68928.2026.00028)
+38. **LLM-Based Test Oracles: Source-of-Authority Taxonomy—A Systematic Literature Review** (2026). Phân loại 83 nghiên cứu về nguồn căn cứ của test oracle dùng LLM. [Nguồn](https://arxiv.org/abs/2607.05031) · [DOI](https://doi.org/10.1109/ACCESS.2026.3729738)
+39. **TOGLL: Correct and Strong Test Oracle Generation with LLMs** (2025). Đối chiếu theo ngữ cảnh unit test Java, độ chính xác, báo sai và khả năng phát hiện lỗi. [Nguồn](https://arxiv.org/abs/2405.03786)
+40. **TOGBench: A Developer-Written Multi-Variant Dataset and Benchmark Suite for Test Oracle Generation** (2026). Benchmark đánh giá oracle được sinh trong các unit test do lập trình viên viết. [Nguồn](https://2026.aiwareconf.org/details/aiware-2026-benchmark---dataset-track/6/TOGBench-A-Developer-Written-Multi-variant-Dataset-and-Benchmark-Suite-for-Test-Orac) · [DOI](https://doi.org/10.1145/3805760.3814927)
 
 ## Nguồn đối chiếu bổ sung về test oracle
 

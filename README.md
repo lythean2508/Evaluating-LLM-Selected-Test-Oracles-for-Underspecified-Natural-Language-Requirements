@@ -8,9 +8,13 @@ This package accompanies the manuscript on conservative assertion selection from
 
 The [paired API follow-up](followup/README.md) adds Qwen2.5-7B-Instruct, a matched 0.5B run, and a frozen-rule evaluation on four held-out TodoApp requirement pairs. The manuscript includes both experiments. The follow-up directory includes the protocol, labels, model completions, and replay command.
 
-The [annotated source guide in Vietnamese](SOURCES.md) maps the study claims to replication evidence, lists the 34 manuscript references, and links to study resources and official venue calls.
+The [annotated source guide in Vietnamese](SOURCES.md) maps the study claims to replication evidence and lists the 40 manuscript references. The [comparison with closest work](RELATED-WORK.md) records the search scope and differences in evaluation design.
 
 ## Recompute the saved results
+
+Use `python verify_all.py --output verification-run` to verify the published file digests and reproduce the archived pilots, the paired follow-up, and the label-policy sensitivity tables. The command uses saved completions and API evidence.
+
+The [validation record](VALIDATION.md) also documents regeneration of 120 model masks and live re-observation of all 23 FastAPI cases.
 
 Use Python 3.12 or later. Keep these files together in one directory.
 

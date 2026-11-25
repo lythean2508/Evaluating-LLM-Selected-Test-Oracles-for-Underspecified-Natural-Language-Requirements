@@ -1,5 +1,5 @@
 \subsection{Matched FastAPI Comparison}
-Table~\ref{tab:api-model-size} shows the comparisons under the matched runtime. For vague requirements, 7B increases raw supported coverage from 31/48 to 36/48 and filtered coverage from 18/48 to 20/48. The intersection retains 18/31 supported choices at 0.5B and 20/36 at 7B, about 58\% and 56\%, respectively. It removes all observed unsupported selections on FastAPI. Qualified detections for the vague filtered configuration move from 22/51 to 21/51. For precise text, filtered coverage moves from 50/81 to 47/81 and qualified detections from 36/51 to 37/51. The larger model improves some outcomes while leaving a supported-retention bottleneck.
+Table~\ref{tab:api-model-size} shows the matched-runtime comparison under the original labels. For vague requirements, 7B increases raw supported coverage from 31/48 to 36/48 and filtered coverage from 18/48 to 20/48. The intersection retains 18/31 supported choices at 0.5B and 20/36 at 7B, about 58\% and 56\%, respectively. Every retained FastAPI selection is supported under these labels. Qualified detections for the vague filtered configuration move from 22/51 to 21/51. For precise text, filtered coverage moves from 50/81 to 47/81 and qualified detections from 36/51 to 37/51.
 
 \begin{table}[t]
 \caption{Matched FastAPI model comparison under Vulkan. Coverage is supported selected over available. Kills are qualified detections over 51 repeated mutant opportunities.}
@@ -50,6 +50,7 @@ Table~\ref{tab:heldout-status} reports status-oracle outcomes. On precise text, 
 \caption{Held-out TodoApp status assertions. Coverage uses available supported candidates. Unsupported uses all filtered selections. Empty uses all filtered suites. A dash marks zero selected assertions.}
 \label{tab:heldout-status}
 \centering\small
+\setlength{\tabcolsep}{4pt}
 \begin{tabular}{llrrrr}
 \toprule
  & & \multicolumn{2}{c}{Coverage} & \multicolumn{2}{c}{Filtered}\\
@@ -64,3 +65,10 @@ Vague & 7B & 3/12 & 0/12 & -- & 12/12\\
 \end{table}
 
 In one deterministic pass, rules cover 7/8 supported precise candidates and contribute one unsupported selection out of eight. For the precise deletion requirement, HTTP 404 belongs to a follow-up retrieval. The rule sees 404 in the text and selects a rejection check for the measured DELETE. Both filtered configurations retain that unsupported check in some seeds. Rule agreement therefore does not establish requirement support on the held-out service. The new sample is small and measures status selection only.
+
+\subsection{Rule Ceiling and Sensitivity to Support Labels}
+Under the original vague FastAPI labels, the rules cover 27/48 supported opportunities across three seeds. At 0.5B the four partition counts are 18 selected by both, 13 by the model alone, 9 by rules alone, and 8 by neither. At 7B the respective counts are 20, 16, 7, and 5. The larger model misses fewer cases selected by rules and selects more supported cases outside the rule set. The intersection excludes the latter group regardless of model size. On vague TodoApp the rule selector is empty before label-based scoring, so the observed empty intersections are independent of how annotators classify candidates.
+
+We replayed the FastAPI results under all combinations of three interpretive choices surfaced by an exploratory AI-assisted review. The stricter choices require explicit wording for the exact not-found HTTP code (R3), for fields of the PUT response as distinct from properties of the updated item (four checks in R6), and for the token component of a compound successful-login check (R34). Enabling a choice removes the corresponding label or labels from the original support set. All eight configurations reuse the same saved suites and observations. They are a deterministic sensitivity analysis of these six decisions.
+
+Keeping the original labels gives 18/48 versus 20/48 filtered coverage on vague requirements. Requiring explicit PUT response fields reverses the order in all four policies with that choice active. With all three stricter choices, coverage is 16/33 versus 14/33 and unsupported selections are 2/18 versus 6/20. Qualified detections for 7B are lower on vague requirements in all eight policies. On precise requirements the original comparison of 36/51 versus 37/51 reverses to 31/51 versus 28/51 when the token component requires explicit wording. These switches reveal which conclusions depend on the interpretation policy. The human agreement study remains a separate validation step.

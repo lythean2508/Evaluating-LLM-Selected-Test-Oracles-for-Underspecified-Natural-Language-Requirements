@@ -1,0 +1,5 @@
+model,variant,both,model_only,rules_only,neither,rule_ceiling,supported_available
+qwen-0.5b,precise,50,0,31,0,81,81
+qwen-0.5b,vague,18,13,9,8,27,48
+qwen-7b,precise,47,0,34,0,81,81
+qwen-7b,vague,20,16,7,5,27,48
