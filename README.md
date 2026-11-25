@@ -1,10 +1,10 @@
 # Evaluating LLM-Selected Test Oracles for Underspecified Natural-Language Requirements
 
-[Read the current paper](paper.pdf) | [Download the full replication package (v1.1.0)](https://github.com/lythean2508/Evaluating-LLM-Selected-Test-Oracles-for-Underspecified-Natural-Language-Requirements/releases/tag/v1.1.0) | [Original pilots (v1.0.0)](https://github.com/lythean2508/Evaluating-LLM-Selected-Test-Oracles-for-Underspecified-Natural-Language-Requirements/releases/tag/v1.0.0)
+[Read the current paper](paper.pdf) | [Download the full replication package (v1.1.1)](https://github.com/lythean2508/Evaluating-LLM-Selected-Test-Oracles-for-Underspecified-Natural-Language-Requirements/releases/tag/v1.1.1) | [Original pilots (v1.0.0)](https://github.com/lythean2508/Evaluating-LLM-Selected-Test-Oracles-for-Underspecified-Natural-Language-Requirements/releases/tag/v1.0.0)
 
 This repository contains the manuscript and frozen evidence for a diagnostic pilot of requirement-supported assertion selection. Model selection, deterministic text rules, and their intersection are compared. It is not a full end-to-end test generation benchmark.
 
-The current public edition includes the 11-page manuscript and the full replication evidence. Version 1.0.0 preserves the two original pilots as published on 20 November 2026. Version 1.1.0 adds the paired API experiments, eight label policies, and the verification report.
+The current public edition includes the 11-page manuscript and the full replication evidence. Version 1.0.0 preserves the two original pilots as published on 20 November 2026. Version 1.1.1 includes the paired API experiments, eight label policies, and the verification report.
 
 The [paired API follow-up](followup/README.md) adds Qwen2.5-7B-Instruct, a matched 0.5B run, and a frozen-rule evaluation on four held-out TodoApp requirement pairs. The manuscript includes both experiments. The follow-up directory includes the protocol, labels, model completions, and replay command.
 
