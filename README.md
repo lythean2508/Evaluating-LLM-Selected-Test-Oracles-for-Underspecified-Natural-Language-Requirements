@@ -1,10 +1,10 @@
 # Evaluating LLM-Selected Test Oracles for Underspecified Natural-Language Requirements
 
-[Read the paper](paper.pdf) | [Download the versioned replication package](https://github.com/lythean2508/Evaluating-LLM-Selected-Test-Oracles-for-Underspecified-Natural-Language-Requirements/releases/tag/v1.0.0)
+[Read the current paper](paper.pdf) | [Download the full replication package (v1.1.0)](https://github.com/lythean2508/Evaluating-LLM-Selected-Test-Oracles-for-Underspecified-Natural-Language-Requirements/releases/tag/v1.1.0) | [Original pilots (v1.0.0)](https://github.com/lythean2508/Evaluating-LLM-Selected-Test-Oracles-for-Underspecified-Natural-Language-Requirements/releases/tag/v1.0.0)
 
 This repository contains the manuscript and frozen evidence for a diagnostic pilot of requirement-supported assertion selection. Model selection, deterministic text rules, and their intersection are compared. It is not a full end-to-end test generation benchmark.
 
-This package accompanies the manuscript on conservative assertion selection from underspecified natural-language requirements. The original diagnostic pilots were documented in the 20 November 2026 revision.
+The current public edition includes the 11-page manuscript and the full replication evidence. Version 1.0.0 preserves the two original pilots as published on 20 November 2026. Version 1.1.0 adds the paired API experiments, eight label policies, and the verification report.
 
 The [paired API follow-up](followup/README.md) adds Qwen2.5-7B-Instruct, a matched 0.5B run, and a frozen-rule evaluation on four held-out TodoApp requirement pairs. The manuscript includes both experiments. The follow-up directory includes the protocol, labels, model completions, and replay command.
 
@@ -72,9 +72,9 @@ The score command replays saved evidence; it does not call an LLM or rerun servi
 
 `SHA256SUMS.txt` identifies the release files. The two data archives preserve their original bytes and internal provenance. See `THIRD_PARTY_NOTICES.md` for upstream licensing. No new license for the authors' original work is granted by this repository.
 
-## Repository update on 23 November 2026
+## Inspect the original pilot tables
 
-The existing manuscript is retained. The deferred 11-page revision and its secondary analyses are not included in this update. The repository now also includes the extracted `controlled/` and `api/` sources and evidence from the local replication folder, without Python bytecode or runtime environments.
+The extracted `controlled/` and `api/` directories contain the original pilot scripts and evidence. Use the commands below to work directly with those tables.
 
 To recompute and inspect their CSV tables directly:
 
