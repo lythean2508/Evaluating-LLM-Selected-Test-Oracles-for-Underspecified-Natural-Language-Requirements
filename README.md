@@ -6,6 +6,8 @@ This repository contains the manuscript and frozen evidence for a diagnostic pil
 
 This package accompanies the reviewer-revised manuscript on conservative assertion selection from underspecified natural-language requirements. The revision date is 20 November 2026.
 
+The [annotated source guide in Vietnamese](SOURCES.md) maps the study claims to replication evidence, lists all 33 manuscript references, and links to follow-up study resources and official venue calls.
+
 ## Recompute the saved results
 
 Use Python 3.12 or later. Keep these files together in one directory.
