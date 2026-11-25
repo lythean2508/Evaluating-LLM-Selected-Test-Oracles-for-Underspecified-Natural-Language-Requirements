@@ -1,86 +1,46 @@
 # Evaluating LLM-Selected Test Oracles for Underspecified Natural-Language Requirements
 
-[Read the current paper](paper.pdf) | [Download the full replication package (v1.1.1)](https://github.com/lythean2508/Evaluating-LLM-Selected-Test-Oracles-for-Underspecified-Natural-Language-Requirements/releases/tag/v1.1.1) | [Original pilots (v1.0.0)](https://github.com/lythean2508/Evaluating-LLM-Selected-Test-Oracles-for-Underspecified-Natural-Language-Requirements/releases/tag/v1.0.0)
+[Manuscript source (`paper.tex`)](paper.tex) | [Compiled manuscript PDF (`paper.pdf`)](paper.pdf) | [Full replication release (v1.1.1)](https://github.com/lythean2508/Evaluating-LLM-Selected-Test-Oracles-for-Underspecified-Natural-Language-Requirements/releases/tag/v1.1.1) | [Original pilots (v1.0.0)](https://github.com/lythean2508/Evaluating-LLM-Selected-Test-Oracles-for-Underspecified-Natural-Language-Requirements/releases/tag/v1.0.0)
 
-This repository contains the manuscript and frozen evidence for a diagnostic pilot of requirement-supported assertion selection. Model selection, deterministic text rules, and their intersection are compared. It is not a full end-to-end test generation benchmark.
+This repository contains the manuscript and frozen evidence for a diagnostic study of requirement-supported assertion selection under natural-language underspecification. Grammar-constrained LLM selection, deterministic lexical rules, and their agreement intersection are compared on shared execution traces. It is not a full end-to-end test generation benchmark.
 
-The current public edition includes the 11-page manuscript and the full replication evidence. Version 1.0.0 preserves the two original pilots as published on 20 November 2026. Version 1.1.1 includes the paired API experiments, eight label policies, and the verification report.
+Version 1.0.0 preserves the two original pilots as published on 20 November 2026. Version 1.1.1 added the paired Qwen 0.5B/7B Vulkan experiments, held-out TodoApp frozen-rule transfer, and eight-policy label sensitivity analysis. The current **v1.2.0 manuscript revision** (25 November 2026) preserves all frozen experimental archives byte-for-byte while harmonizing CPU vs. Vulkan reporting across Abstract/Results/Conclusion, tabulating all 144 controlled completions (including complete `exact` mutation kills and structural ambiguity breakdowns), adding unvetted compatible-kill and four-part partition tables for RQ4, analyzing cross-step scope leakage on TodoApp `DELETE`, upgrading Figure 1 to vector TikZ, and standardizing 48 verified scholarly and artifact references.
 
-The [paired API follow-up](followup/README.md) adds Qwen2.5-7B-Instruct, a matched 0.5B run, and a frozen-rule evaluation on four held-out TodoApp requirement pairs. The manuscript includes both experiments. The follow-up directory includes the protocol, labels, model completions, and replay command.
+- [Paired API follow-up (`followup/README.md`)](followup/README.md): Qwen2.5-0.5B-Instruct vs. Qwen2.5-7B-Instruct under Vulkan, frozen-rule transfer to four held-out TodoApp pairs, and eight-policy sensitivity replay.
+- [Annotated source guide in Vietnamese (`SOURCES.md`)](SOURCES.md): maps study claims to replication files and documents all 48 verified references.
+- [Comparison with closest work (`RELATED-WORK.md`)](RELATED-WORK.md): contrasts selective assertion gating with closest 2024–2026 oracle, abstention, and requirements-gating studies.
+- [Validation record (`VALIDATION.md`)](VALIDATION.md): documents regeneration of 120 model masks and live Docker re-observation of all 23 FastAPI cases.
 
-The [annotated source guide in Vietnamese](SOURCES.md) maps the study claims to replication evidence and lists the 40 manuscript references. The [comparison with closest work](RELATED-WORK.md) records the search scope and differences in evaluation design.
+## Recompute all saved results
 
-## Recompute the saved results
+Use Python 3.12 or later from the repository root:
 
-Use `python verify_all.py --output verification-run` to verify the published file digests and reproduce the archived pilots, the paired follow-up, and the label-policy sensitivity tables. The command uses saved completions and API evidence.
+```text
+python verify_all.py --output verification-run
+```
 
-The [validation record](VALIDATION.md) also documents regeneration of 120 model masks and live re-observation of all 23 FastAPI cases.
+This command verifies all 70 published SHA-256 digests and reproduces from raw records the archived controlled and FastAPI pilots, the paired 0.5B/7B FastAPI and TodoApp summaries, the four-part support partitions, and all eight label-policy sensitivity rows.
 
-Use Python 3.12 or later. Keep these files together in one directory.
-
-- `verify_paper_results.py`
-- `replication-controlled-pilot.zip`
-- `replication-restestbench-pilot.zip`
-
-Open a terminal in that directory and run the following command.
+To replay only the original v1.0.0 archives (`verify_paper_results.py`, `replication-controlled-pilot.zip`, and `replication-restestbench-pilot.zip`):
 
 ```text
 python verify_paper_results.py score
 ```
 
-On Windows with a configured Python launcher, the command can also be written as follows.
-
-```powershell
-py -3.14 .\verify_paper_results.py score
-```
-
-The verifier extracts the archives into a temporary directory, reruns their scoring programs, and compares the recomputed summaries with the frozen summaries. Expected output includes 58/126, 0/126, 29/126, and 42/42 for the controlled study and all six rows of the API results table. The final PASS message confirms a successful replay. The script prints the replay location for inspection.
-
-This command replays the original pilots. To score the paired model-size comparison and held-out transfer, use the [follow-up replay command](followup/README.md#recompute-the-results). Independent human annotation remains proposed work.
-
 ## Live HTTP demonstration
 
-The complete local demonstration source is now included in `http-demo-source.zip`. The root launcher verifies its SHA-256 digest, extracts a local runtime directory and generates demo settings. It no longer needs a sibling `Research/HTTP-Demo` directory from the author's computer.
-
-On Windows, use Python 3.12 or later (Python 3.14 was tested), Docker Desktop and the Linux Engine. From this repository directory, run:
+With Python 3.12+ and Docker Desktop (Linux Engine), run:
 
 ```powershell
 py -3.14 .\http_demo.py --interactive
 ```
 
-Read [the Vietnamese HTTP demonstration guide](DEMO-HTTP.md) for Swagger, the two Enter-key pauses, missing-image setup and port conflicts. The demo sends real HTTP for requirement 4 and one message-changing mutant. It does not regenerate Qwen responses or rerun all aggregate experiments.
+See [DEMO-HTTP.md](DEMO-HTTP.md) for Swagger inspection, interactive pauses, and image building (`--build-images`).
 
-The original `verify_paper_results.py score` command and frozen data archives remain unchanged. Its legacy `live` mode still requires the original experiment-workspace layout; use `http_demo.py` for the packaged, portable demonstration.
+## Compiling the manuscript
 
-## Manuscript source
-
-Open `paper.tex` with XeLaTeX and the ACM `acmart` class. Keep `api-rates.pdf` beside the source and `followup/manuscript-results.tex` in the follow-up directory. Compile twice to resolve citations and cross-references. The reference list is embedded in the source. `references.bib` provides a separate reusable bibliography.
-
-The figure was generated from the frozen API summary. The bibliography gives DOI links or source URLs, with checked metadata in `references.json`. `audit.json` records the pilot counts, the benchmark commit, the data hashes, and the English-named verifier hash. The two English-named archives have the same bytes as their original counterparts.
-
-The archive-internal README files and data records retain their original provenance. Authors should review the scientific interpretation, annotations, and submission-specific formatting before publication.
-
-## Scope and interpretation
-
-The controlled pilot contains 12 complete/incomplete requirement pairs, seven probes, and 144 model completions. The API pilot contains six precise/vague pairs, 17 mutants, 36 completions, and 23 recorded API observations. The model is Qwen2.5-0.5B-Instruct (Q4_K_M), with seeds 11, 23, and 47. Repeated scoring across seeds does not create additional independent mutants.
-
-On vague API requirements, filtering changes supported coverage from 28/48 to 17/48, unsupported selections from 56/84 to 0/17, and qualified mutant detections from 0/51 to 19/51. Rules alone yield 10/17 qualified detections in one deterministic pass. These are pilot measurements, limited by one small model, sample-informed rules, one annotation set, and fixed assertion menus.
-
-The score command replays saved evidence; it does not call an LLM or rerun services. A successful replay demonstrates numerical consistency with the stored records, not independent validation of the annotations or generalization to other systems.
+Compile `paper.tex` twice with **XeLaTeX** and the ACM `acmart` class (`xelatex -interaction=nonstopmode -halt-on-error paper.tex` via MiKTeX/TeX Live, or on Overleaf with XeLaTeX selected), keeping `api-rates.pdf` in the root directory and `followup/manuscript-results.tex` in `followup/`. After recompiling `paper.tex`, refresh the `paper.pdf` entry in `SHA256SUMS.txt` so `verify_all.py` matches the new PDF digest.
 
 ## Contents and third-party material
 
-`SHA256SUMS.txt` identifies the release files. The two data archives preserve their original bytes and internal provenance. See `THIRD_PARTY_NOTICES.md` for upstream licensing. No new license for the authors' original work is granted by this repository.
-
-## Inspect the original pilot tables
-
-The extracted `controlled/` and `api/` directories contain the original pilot scripts and evidence. Use the commands below to work directly with those tables.
-
-To recompute and inspect their CSV tables directly:
-
-```powershell
-py -3.14 .\controlled\study.py score
-py -3.14 .\api\restest-extension\pilot.py score
-```
-
-The summary CSV files are `controlled/results/summary.csv` and `api/restest-extension/results/summary.csv`; the API per-case details are in `api/restest-extension/results/comparison.csv`. Docker images and model weights are external dependencies, not repository files. Repository access follows the owner's GitHub visibility settings.
+`SHA256SUMS.txt` records SHA-256 digests for all repository files. Both primary pilot archives preserve their original v1.0.0 bytes and provenance. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for upstream AGPL-3.0 licensing of RESTestBench excerpts.

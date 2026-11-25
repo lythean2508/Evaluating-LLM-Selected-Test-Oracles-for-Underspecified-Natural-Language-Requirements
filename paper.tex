@@ -24,8 +24,9 @@
 \email{trucntt@uit.edu.vn}
 \affiliation{\institution{VNUHCM - University of Information Technology}\city{Ho Chi Minh City}\country{Vietnam}}
 
-
 \usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
 \usepackage{balance}
 \emergencystretch=1em
 
@@ -34,115 +35,122 @@
 
 \begin{document}
 \begin{abstract}
-Large language models can select test assertions that natural-language requirements leave undecided. We evaluate assertion-level requirement support, retention, and qualified fault detection under a filter that keeps the intersection of model and rule selections. The pilots use 12 controlled threshold pairs and six FastAPI requirement pairs with 17 RESTestBench mutants. A matched follow-up compares Qwen2.5-0.5B-Instruct and Qwen2.5-7B-Instruct and transfers frozen rules to four held-out TodoApp pairs. On vague FastAPI text, 7B raises filtered coverage from 18/48 to 20/48 under the original labels, with qualified detections moving from 22/51 to 21/51. An alternative requirement interpretation reverses the coverage comparison. The frozen rules cover 27 of 48 supported FastAPI opportunities under the original labels and select no status assertion on vague TodoApp text, yielding 12/12 empty suites per model. A partition of supported selections and replay across eight label policies distinguish the rule-imposed ceiling from model omissions and expose which model-size conclusions depend on the interpretation policy.
+Large language models frequently select plausible test assertions that natural-language requirements leave undecided. Framing assertion selection as selective prediction with abstention, we evaluate requirement support, supported retention, suite nonemptiness, and qualified fault detection under an agreement filter that intersects LLM selections with deterministic lexical rules. Two diagnostic pilots use 12 complete/incomplete threshold requirement pairs (144 completions) and six precise/vague FastAPI pairs with 17 RESTestBench mutants (36 completions, 23 API observations). With Qwen2.5-0.5B-Instruct, filtering eliminates unsupported assertions on incomplete thresholds ($58/126$ to $0/126$) and vague FastAPI text ($56/84$ to $0/17$), trading supported FastAPI coverage ($28/48$ to $17/48$ via lexical paraphrase vetoes) for valid suites that raise qualified mutant detections from $0/51$ to $19/51$. A matched Vulkan follow-up compares Qwen2.5-0.5B-Instruct and Qwen2.5-7B-Instruct and transfers frozen rules to four held-out TodoApp pairs. On vague FastAPI text, 7B raises raw original-compatible kills from $2/51$ to $23/51$ largely by guessing unstated implementation details ($5/51$ raw qualified kills); after filtering, coverage moves from $18/48$ to $20/48$ and qualified kills from $22/51$ to $21/51$, with coverage ranking reversing under stricter response-field policies. Frozen rules cap FastAPI vague coverage at $27/48$, yield $12/12$ empty suites on vague TodoApp text, and suffer correlated cross-step scope leakage on multi-step deletion.
 \end{abstract}
-\keywords{Requirements-Based Testing, Large Language Models, Test Oracles, Natural-Language Requirements, Mutation Testing, REST APIs}
+\keywords{Requirements-Based Testing, Large Language Models, Test Oracles, Natural-Language Requirements, Abstention, Mutation Testing, REST APIs}
 \maketitle
 \pagestyle{plain}\thispagestyle{plain}\raggedbottom
+
 \section{Introduction}
 Requirements-based test generation connects stakeholder intent to observable software behavior. A generated test needs an executable setup, an input or action sequence, and an oracle that decides whether its observed result is acceptable. Advances in language models make the translation from informal requirements to test artifacts increasingly practical, while the oracle problem continues to require careful treatment of expected behavior \cite{barr2015,yang2025,wang2024survey}.
 
-A requirement can describe a valid objective while leaving its implementation choices open. Consider a requirement that another user's item must be inaccessible. It supports a rejection check under an agreed API interpretation. An assertion about one exact error code or message needs additional textual evidence. A generated assertion can agree with the current implementation and still impose a detail that the requirement leaves undecided. Conversely, a broad rejection check can follow the requirement and miss a fault that changes only an error message.
+Natural-language specifications routinely exhibit ambiguity and underspecification \cite{berry2004,ezzini2022}: a requirement can state a valid business objective while leaving implementation choices open. Consider a requirement that another user's item must be inaccessible. It supports a rejection check under an agreed API interpretation, whereas an assertion demanding one exact status code or error message requires explicit textual evidence. An LLM-selected assertion can agree with the current implementation and kill code mutants yet still impose an unstated obligation \cite{konstantinou2024,ding2026}. Conversely, a conservative status-class check follows the requirement while missing faults that alter only an error message.
 
-These distinctions matter when evaluating language-model-generated tests. A suite may execute successfully on a reference service yet include an unsupported assumption. A suite may contain only supported checks yet detect relatively few mutants. A filtering step can improve the first property while removing useful checks. Studying these outcomes together makes the practical effect of conservative filtering visible.
+These distinctions matter when evaluating LLM-generated test suites. A suite may pass on a reference service while encoding unsupported assumptions; a suite restricted to supported checks may detect fewer mutants; and a post-generation filter---analogous to industrial validation gates \cite{harman2025ach}---can eliminate unsupported assumptions at the cost of discarding valid checks or producing empty suites. Viewed through selective classification \cite{elyaniv2010} and LLM abstention \cite{wen2025}, conservative oracle selection trades coverage of supported checks against the risk of asserting undecided behavior.
 
-We examine this issue in a diagnostic pilot study with a deliberately constrained task. Inputs, API request sequences, and candidate assertion menus are fixed. A small local model selects expected outcomes. A deterministic rule selector separately examines the visible requirement. Their intersection produces a filtered suite. The contribution is to quantify the trade-off between requirement support and supported retention under a fixed candidate space, with nonemptiness and qualified fault detection assessed jointly. The empirical scope is the selection stage of LLM-based test case generation from natural-language requirements.
+We examine this trade-off in a diagnostic study with a deliberately controlled design. Inputs, API request sequences, and candidate assertion menus are fixed while requirement detail varies. A local instruction-tuned model selects assertions, a deterministic lexical rule selector independently inspects the visible requirement, and their intersection forms the filtered suite. The empirical scope isolates the oracle-selection stage of requirements-based testing.
 
-\textbf{RQ1} asks how many selected assertions lack support in the requirement. \textbf{RQ2} asks how many supported assertions survive filtering. \textbf{RQ3} asks how many seeded faults are detected by nonempty, supported suites that pass the reference implementation. \textbf{RQ4} asks how model size changes retention and qualified fault detection in the FastAPI pilot, and how frozen rules transfer to held-out TodoApp requirements. The controlled and API pilots address RQ1--RQ3. The paired API study addresses RQ4.
+\textbf{RQ1} asks how often selected assertions lack support in the visible requirement across omission types and detail levels. \textbf{RQ2} asks how many supported assertions survive intersection filtering and which selector causes each omission. \textbf{RQ3} asks how many seeded faults are detected by nonempty, supported suites that pass the reference implementation. \textbf{RQ4} asks how scaling model capacity from 0.5B to 7B changes raw behavior, retention, and qualified fault detection, how frozen rules transfer to a held-out service, and how sensitive conclusions are to the support-annotation policy.
 
-The controlled experiment contains 12 pairs of complete and incomplete threshold requirements, seven inputs per variant, two generation prompts, and three seeds, giving 144 model completions. The API experiment uses six precise/vague requirement pairs and 17 associated FastAPI mutants from RESTestBench \cite{kogler2026bench,restestrepo}. It contains 36 model completions and 23 recorded API observations. The API observations are shared when evaluating the three selection configurations.
+Two archived pilots address RQ1--RQ3: a controlled threshold experiment (12 complete/incomplete pairs across three structural omission types, seven probes, two prompts, and three seeds; 144 completions) and a stateful REST API pilot on six precise/vague FastAPI pairs and 17 mutants from RESTestBench \cite{kogler2026bench,restestrepo} (36 completions and 23 shared API observations). A paired follow-up addresses RQ4 by running Qwen2.5-0.5B-Instruct and Qwen2.5-7B-Instruct under a matched Vulkan runtime on FastAPI and four held-out TodoApp requirement pairs, accompanied by a deterministic sensitivity replay across eight annotation policies.
 
-The study contributes a paired evaluation of assertion selection under varying requirement detail, with the same candidates and execution observations for model-only, rules-only, and their intersection. A partition of supported candidates attributes omissions to either selector and quantifies the attainable coverage of the frozen rules. The API follow-up varies model size, transfers the rules to a held-out service, and tests the stability of the comparison under explicit label policies. Per-requirement and per-seed records support replay of each contrast.
+The study contributes: (1) an assertion-level selective-prediction formulation with a conditional detection bound and a four-part support decomposition separating model omissions from rule vetoes; (2) complete pilot evidence showing how filtering eliminates unsupported guesses and false-alarm suites while exposing lexical paraphrase bottlenecks on field-level checks; and (3) a paired 0.5B/7B and held-out transfer evaluation revealing that larger models guess more implementation-compatible yet unsupported checks on vague text, that frozen lexical rules suffer both recall collapse and cross-step scope leakage out of sample, and that model-size rankings depend on interpretive label policy.
 
 \section{Background and Problem Formulation}
-\subsection{Expected Behavior and Requirement Support}
-An oracle evaluates a behavior produced by a test execution. Assertions can check status codes, response values, relations between created and retrieved resources, or the outcome of a subsequent operation. The oracle literature distinguishes several information sources, including specifications, contracts, existing implementations, and domain knowledge \cite{barr2015}. In this study, support is judged against the requirement variant that the selector actually receives.
+\subsection{Expected Behavior, Ambiguity, and Abstention}
+An oracle evaluates behavior produced by a test execution, such as HTTP status codes, response fields, resource relationships, or follow-up state transitions. The oracle literature distinguishes specifications, contracts, existing implementations, and domain conventions as distinct sources of authority \cite{barr2015,mughal2026}. Because informal requirements leave details open or admit multiple readings \cite{berry2004}, an oracle selector facing underspecified text must exercise calibrated abstention rather than silent guessing \cite{wen2025,elyaniv2010}. In this study, support is judged strictly against the requirement variant visible to the selector.
 
-Let $r$ be a requirement and $C_r$ its finite assertion menu. Let $G_r\subseteq C_r$ contain assertions judged to follow from $r$ under the study's interpretation policy. The annotation policy accepts direct statements and selected immediate behavioral consequences. For example, a general denial of access is represented by a client-error check. The policy makes this mapping explicit so that it can be challenged and revised. It also treats exact status and detail checks as requiring more specific wording.
+Let $r$ be a visible requirement and $C_r$ its finite candidate assertion menu. Let $G_r\subseteq C_r$ denote assertions entailed by $r$ under an explicit interpretation policy. Our baseline policy accepts direct textual statements and designated immediate consequences (e.g., general access denial supports an HTTP 4xx check), while requiring explicit wording for exact numeric status codes and error-detail strings. Recording $G_r$ explicitly allows alternative policies to be replayed on the same outputs.
 
-The controlled experiment gives support a finite semantics. The input domain is the integers from 0 to 10, and outputs are labels A, B, and C. A partial requirement defines a set of permissible interpretations. A probe outcome is determined when every permissible interpretation yields the same label. The selector should abstain when multiple labels remain possible. Thus, partial information can support some outcomes even when other outcomes for the same requirement remain undecided.
+The controlled experiment provides a finite model-theoretic semantics. Inputs are integers $x\in\{0,\dots,10\}$ and outputs are labels in $\{A,B,C\}$. An incomplete requirement defines a non-singleton set of permissible interpretations; a probe $x$ is \emph{determined} when all permissible interpretations assign the same label, and \emph{underdetermined} otherwise, where a sound selector must abstain (\texttt{?}).
 
-\subsection{Compatibility and Fault Detection}
-Compatibility records whether a selected suite passes on the original service. Fault detection records whether a selected assertion fails on an associated mutant. The distinction between execution validity and behavioral adequacy also appears in recent requirement-to-test benchmarks and agent evaluations \cite{kogler2026bench,qi2026,shi2026}. We additionally require the suite's selected assertions to belong to $G_r$ before crediting a qualified mutant detection.
+\subsection{Compatibility and Qualified Fault Detection}
+Compatibility records whether a selected suite passes on the original reference service. Fault detection records whether at least one selected assertion fails on a requirement-associated mutant. Recent requirement-to-test benchmarks highlight a persistent gap between execution-passing tests and behaviorally adequate fault detection \cite{kogler2026bench,qi2026,shi2026}, while coding-agent audits show that tests often enforce unstated implementation details \cite{ding2026}. To prevent crediting coincidental implementation matching, we require every assertion in a selected suite to belong to $G_r$ before crediting a \emph{qualified} mutant detection.
 
-A mutant is an intentionally modified program version. Mutation testing can expose weaknesses in tests by changing observable behavior in controlled ways \cite{papadakis2019}. Property-based mutation testing ties the interpretation of a killed mutant to the property being tested \cite{bartocci2023}. We use the benchmark's requirement-associated mutants and separately report which ones are distinguishable by the available supported candidates.
+Mutation testing evaluates test adequacy via controlled program modifications \cite{papadakis2019}; property-based and compliance-guided mutation testing tie mutant kills to specific behavioral obligations \cite{bartocci2023,harman2025ach}. We evaluate RESTestBench's requirement-associated mutants alongside controlled threshold mutants, reporting both all associated mutants and those distinguishable within $G_r$.
 
 \section{Related Work and Literature Search}
 \subsection{Search Scope}
-The literature search was updated on 25 November 2026. We used web-indexed scholarly searches with title verification through author repositories, arXiv, publisher pages, official model documentation, and research artifact repositories. Query families combined natural-language requirements with test generation, test oracles, underspecification, ambiguity, grounding, and mutation testing. Searches also used the titles of the closest studies to identify related work and artifacts.
+The literature search was updated on 25 November 2026 across web-indexed scholarly databases, arXiv, ACM Digital Library, IEEE Xplore, ACL Anthology, JMLR, official model cards, and artifact repositories. Query families combined \emph{natural-language requirements} with \emph{test generation}, \emph{test oracles}, \emph{underspecification}, \emph{requirements ambiguity}, \emph{selective classification}, \emph{LLM abstention}, \emph{clarification}, \emph{sufficiency gating}, and \emph{mutation testing}. Forward and backward checks verified official conference/journal DOIs and author records.
 
-We retained sources relevant to requirement-driven generation, semantic oracle evaluation, fault detection, or the pilot implementation. This targeted narrative synthesis is bounded by the queries, accessible records, and search date. The companion register records the search and contrasts with the closest work. The requirements-based test generation survey artifact lists 267 primary studies for further screening \cite{rbtgdata}.
+We retained 48 sources: 40 peer-reviewed publications or scholarly preprints and eight model, specification, or benchmark artifacts. The companion source registers (\texttt{SOURCES.md} and \texttt{RELATED-WORK.md}) map each reference to its role; external systematic reviews index 267 RBTG primary studies \cite{rbtgdata} and 83 LLM-oracle studies \cite{mughal2026}.
 
 \subsection{From Requirements to Test Artifacts}
-Requirements-based testing has a substantial history across requirement representations and generation methods \cite{yang2025}. A recent survey of AI-driven generation identifies ambiguity, traceability, and hallucination control as continuing concerns \cite{folorunsho2026}. UMTG derives executable acceptance tests from natural-language use cases and a domain model, using NLP and formal constraints \cite{wang2022umtg}. CiRA extracts conditionals from informal requirements and converts their relationships into acceptance tests \cite{fischbach2023}. These approaches motivate explicit links between a requirement's conditions and the checks a test performs.
+Requirements-based test generation spans formal models, NLP pipelines, and LLM workflows \cite{yang2025,folorunsho2026}, grounded in classical analyses of requirements ambiguity \cite{berry2004} and automated ambiguity handling \cite{ezzini2022}. UMTG derives executable acceptance tests from use cases and domain constraints \cite{wang2022umtg}, while CiRA extracts causal conditionals from informal requirements \cite{fischbach2023}. Industrial LLM studies include retrieval-augmented scenario generation in RAGTAG \cite{arora2024}, user-story-to-Cypress pipelines \cite{ferreira2025}, and prompt-based high-level test generation \cite{masuda2025}. Further extensions apply LoRA fine-tuning \cite{moradi2026}, regulatory auto-formalization in RAFT \cite{xue2026}, and Alloy specification validation \cite{cunha2026}. Rather than varying scenario synthesis, our pilots hold scenarios fixed to isolate assertion support and retention.
 
-RAGTAG uses retrieval-augmented language models to generate industrial test scenarios from requirements \cite{arora2024}. Ferreira et al. study a workflow from user stories to Gherkin scenarios and then Cypress scripts \cite{ferreira2025}. Masuda et al. generate high-level test cases using prompts and evaluate correspondence to existing tests \cite{masuda2025}. These settings emphasize useful scenarios and executable artifacts. Our pilots hold scenario construction fixed and examine the support of the assertions selected for those scenarios.
+\subsection{Oracle Generation, Abstention, and Gating}
+Neural and LLM unit-test oracle generators such as TOGA \cite{dinella2022} and TOGLL \cite{togll2025} predict assertions and exceptions from focal code context, while large-scale evaluations examine false alarms, prompt sensitivity, and developer-written benchmarks \cite{hossain2023,bodicoat2025,togbench2026,ouedraogo2024}. Konstantinou et al.\ show that LLM oracles skew toward actual rather than intended program behavior \cite{konstantinou2024}, and Molinelli et al.\ evaluate post-cutoff Java projects to mitigate training-data contamination \cite{molinelli2025}. Endres et al.\ translate natural-language intent into formal postconditions measured by correctness and bug-discriminating power \cite{endres2024}, and Mughal and Bilal classify LLM oracles by their source of authority \cite{mughal2026}.
 
-Several approaches enrich the generation process. Moradi et al. investigate LoRA-based adaptation for requirement-based test generation \cite{moradi2026}. RAFT integrates domain knowledge and formalized artifacts into compliance-test generation \cite{xue2026}. Cunha and Macedo study LLM-generated tests for validating Alloy specifications \cite{cunha2026}. These works suggest possible extensions involving model adaptation and explicit formal representations. The current experiment evaluates a fixed local model and a lightweight selector under a small, inspectable candidate space.
+When specifications are incomplete, selective classification formalizes the risk--coverage trade-off of abstaining \cite{elyaniv2010}, surveyed for LLMs by Wen et al.\ \cite{wen2025}. In software engineering, ClarifyGPT detects ambiguous prompts via behavioral inconsistency to ask clarifying questions \cite{mu2024clarify}, Madani et al.\ gate entire automation requests on specification sufficiency \cite{madani2026}, Ding audits unstated test expectations in agent benchmarks \cite{ding2026}, and Ma and Eisty generate Java assertions from Defects4J business requirements \cite{ma2026}. Complementing request-level gating and free-form code synthesis, we gate individual candidate assertions via selector intersection and trace selective loss across explicit label policies.
 
-\subsection{Oracle Generation and Evaluation}
-TOGA and TOGLL generate exceptional and assertion oracles in unit-test contexts \cite{dinella2022,togll2025}. An extended evaluation of TOGA investigates false positives and fault detection \cite{hossain2023}. TOGBench evaluates oracle generation using developer-written unit tests \cite{togbench2026}. Konstantinou et al. examine whether generated oracles capture actual or expected program behavior \cite{konstantinou2024}. Mughal and Bilal organize the broader literature by the source of an oracle's authority \cite{mughal2026}. Our study assigns an explicit authority to each candidate: the visible requirement interpreted under a stated policy.
-
-Endres et al. evaluate natural-language-to-postcondition translation using correctness and discriminative power \cite{endres2024}. Molinelli et al. investigate test oracle generation using artifacts created after model training cutoffs \cite{molinelli2025}. Their evaluation highlights the importance of benchmark provenance. Ou\'edraogo et al. compare prompting strategies and models for unit test generation across correctness, readability, coverage, and bug detection \cite{ouedraogo2024}. Our fixed assertion-selection task enables direct analysis of each retained assertion.
-
-Ma and Eisty generate Java oracle code from business requirements derived from real Defects4J bugs and evaluate agreement with a requirement-derived oracle and the fixed program \cite{ma2026}. Ding audits how existing coding-agent benchmark tests can require implementation details omitted by their task descriptions \cite{ding2026}. Madani et al. gate automation at the level of the whole request based on specification sufficiency \cite{madani2026}. Our comparison varies the detail of the requirement for the same assertion menu and measures selective loss caused by intersecting two selectors. It tracks empty suites, unsupported checks, and qualified detections under explicit interpretations of the visible text.
-
-\subsection{REST APIs and the Closest Benchmarks}
-REST API testing must handle interface descriptions, authentication, state, and operation dependencies \cite{golmohammadi2024}. RESTest generates black-box tests from OpenAPI descriptions \cite{martinlopez2021}. RESTifAI constructs reusable API tests through a happy-path workflow and derived negative cases \cite{kogler2025restifai}. These methods provide context for the setup and execution problems that our frozen request sequences intentionally control.
-
-RESTestBench supplies precise/vague requirements, API services, and requirement-associated mutants \cite{kogler2026bench}. ReqTestAgent connects ambiguity processing, test generation, and execution-based verification \cite{shi2026}. Req2Test-Bench evaluates repository-level requirement-to-test implementations and distinguishes passing tests from kill-complete behavior \cite{qi2026}. Our contribution is a local assertion-level analysis of the support/retention trade-off inside a fixed test context. The empirical comparisons in this paper are between the configurations actually run in our pilots. The discussion of external systems describes differences in tasks and evidence.
+\subsection{REST APIs and Requirement-Driven Benchmarks}
+REST API testing must coordinate schemas, authentication, state, and inter-operation dependencies \cite{golmohammadi2024}, as in OpenAPI-driven RESTest \cite{martinlopez2021} and workflow-oriented RESTifAI \cite{kogler2025restifai}. RESTestBench pairs precise and vague requirements with stateful services and requirement-mapped mutants \cite{kogler2026bench}; ReqTestAgent couples ambiguity resolution with execution feedback \cite{shi2026}; and Req2Test-Bench contrasts execution pass rates against mutation adequacy \cite{qi2026}. Our study reuses RESTestBench's paired requirements and mutants under frozen execution traces to attribute support, retention, and detection shifts directly to the oracle-selection stage.
 
 \section{Assertion Selection and Filtering}
-\subsection{Three Selection Configurations}
-Let $L(r)$ be the assertions selected by the language model and $R(r)$ those selected by the deterministic rules. The filtered selection is
+\subsection{Selector Intersection, Partition, and Detection Bound}
+Let $L(r)\subseteq C_r$ denote assertions selected by the LLM and $R(r)\subseteq C_r$ those selected by deterministic lexical rules. The agreement filter retains their intersection:
 \begin{equation}
 F(r)=L(r)\cap R(r).
+\label{eq:filter}
 \end{equation}
-The API pilot evaluates $L$, $R$, and $F$ on the same assertion menu, request sequence, and recorded API outcomes. The filter uses agreement between the model and the text rules. The semantic annotation set $G_r$ is used by the evaluator and is excluded from the generation prompt.
+The evaluator scores $L$, $R$, and $F$ against the external support set $G_r$ (withheld from prompts) and shared execution observations (Figure~\ref{fig:selection}).
 
-Each supported candidate falls into one of four sets according to whether both selectors, only the model, only the rules, or neither selector chose it. Only the first set survives. The size of the first and rules-only sets together is the rule ceiling $|G_r\cap R(r)|$. Any model used with the same rules satisfies $|G_r\cap F(r)|\leq |G_r\cap R(r)|$. An assertion outside $G_r$ can survive when both selectors choose it. If the rule-only suite already qualifies, the intersection can only detect a subset of its mutants on the same observations. These relations give separate interpretations to losses due to the model, the rules, and the qualification criterion.
+For any requirement $r$, $G_r$ partitions into four disjoint subsets: joint selections $G_r\cap L(r)\cap R(r)$, model-only selections $(G_r\cap L(r))\setminus R(r)$ vetoed by the filter, rule-only selections $(G_r\cap R(r))\setminus L(r)$ missed by the model, and joint omissions $G_r\setminus(L(r)\cup R(r))$. Thus $|G_r\cap F(r)|\leq |G_r\cap R(r)|$, defining a model-independent \emph{rule ceiling} on supported retention. Conversely, an unsupported candidate $c\notin G_r$ survives filtering whenever $c\in L(r)\cap R(r)$ (correlated false positives).
+
+Let $\mathcal{K}(S,r)$ be the set of associated mutants killed by selector $S$ when suite qualification $Q(S,r)$ holds (Section~\ref{sec:measures}), and $\emptyset$ otherwise. Under conjunction-based suite evaluation on shared observations, whenever $R(r)$ is qualified ($Q(R(r),r)$ holds),
+\begin{equation}
+\mathcal{K}(F,r)\subseteq \mathcal{K}(R,r).
+\label{eq:bound}
+\end{equation}
+Indeed, if $F(r)=\emptyset$, $\mathcal{K}(F,r)=\emptyset$; if $F(r)\neq\emptyset$, $F(r)\subseteq R(r)$ inherits support and original-service compatibility from $Q(R(r),r)$, and any assertion in $F(r)$ failing on a mutant also belongs to $R(r)$. Crucially, Equation~\ref{eq:bound} is \emph{conditional}: if $R(r)$ admits an unsupported or original-failing assertion ($Q(R(r),r)=\text{false}$), intersecting with $L(r)$ can drop the offending check and restore qualification, unless $L(r)$ commits the same error.
 
 \begin{figure}[t]
 \centering
-\fbox{\parbox{0.90\columnwidth}{\centering Visible requirement, interface context,\\fixed actions, assertion menu}}
-\par\smallskip $\downarrow$\par\smallskip
-\begin{tabular}{cc}
-\fbox{LLM selection $L$} & \fbox{Text-rule selection $R$}\\[5pt]
-\multicolumn{2}{c}{$\downarrow$}\\[3pt]
-\multicolumn{2}{c}{\fbox{Retain $F=L\cap R$}}
-\end{tabular}
-\par\smallskip $\downarrow$\par\smallskip
-\fbox{Support, original pass, mutant checks}
-\caption{Selection and evaluation in the API pilot. The evaluator applies a separate support annotation and shared execution observations to each configuration.}
+\resizebox{\columnwidth}{!}{%
+\begin{tikzpicture}[
+  box/.style={draw, rounded corners=2pt, align=center, font=\footnotesize, inner xsep=4.5pt, inner ysep=5pt},
+  arr/.style={-{Stealth[length=4.5pt]}, semithick}
+]
+\node[box, minimum width=7.6cm] (ctx) {Visible requirement $r$, OpenAPI context, fixed fixture, menu $C_r$};
+\node[box, below left=11pt and -2.3cm of ctx, minimum width=3.5cm] (llm) {LLM selector $L(r)$\\{\scriptsize(grammar-constrained)}};
+\node[box, below right=11pt and -2.3cm of ctx, minimum width=3.5cm] (rul) {Lexical rules $R(r)$\\{\scriptsize(phrase/status anchors)}};
+\node[box, below=36pt of ctx, minimum width=7.6cm] (flt) {Agreement gate $F(r)=L(r)\cap R(r)$\\{\scriptsize Partition of $G_r$: $(L\cap R)\;\sqcup\;(L\setminus R)\;\sqcup\;(R\setminus L)\;\sqcup\;\overline{L\cup R}$}};
+\node[box, below=10pt of flt, minimum width=7.6cm] (eval) {External evaluator: support $G_r$, original pass, $Q(S,r)$, mutant kills $\mathcal{K}(S,r)$};
+\draw[arr] (ctx.south -| llm.north) -- (llm.north);
+\draw[arr] (ctx.south -| rul.north) -- (rul.north);
+\draw[arr] (llm.south) -- (flt.north -| llm.south);
+\draw[arr] (rul.south) -- (flt.north -| rul.south);
+\draw[arr] (flt.south) -- (eval.north);
+\end{tikzpicture}%
+}
+\caption{Selection, agreement gating, and evaluation pipeline. Support labels $G_r$ and recorded execution outcomes are held outside generation and applied uniformly to $L$, $R$, and $F$.}
 \label{fig:selection}
-\Description{The visible requirement and fixed test context feed an LLM selector and text-rule selector. Their intersection is evaluated for support, compatibility with the original service, and mutant detection.}
+\Description{A flow diagram from visible requirement context to parallel LLM and lexical-rule selectors, converging at the intersection gate and support-partition accounting, followed by external evaluation on support, original compatibility, and mutant detection.}
 \end{figure}
 
-\subsection{Model Inputs and Decoding}
-The model is Qwen2.5-0.5B-Instruct in the Q4\_K\_M GGUF format \cite{qwen2024}, run locally using llama.cpp release b5046 \cite{llamacpp}. Saved generation settings use temperature 0.3, top-$k$ 40, top-$p$ 0.95, and seeds 11, 23, and 47. A seed initializes the sampling procedure. These three values define repeated draws under the same configuration.
+\subsection{Model Inputs and Constrained Decoding}
+The primary pilot model is Qwen2.5-0.5B-Instruct (\texttt{Q4\_K\_M} GGUF) \cite{qwen2024}, served locally via \texttt{llama.cpp} release \texttt{b5046} \cite{llamacpp} with temperature $0.3$, top-$k$ $40$, top-$p$ $0.95$, and seeds $11$, $23$, and $47$.
 
-In the controlled experiment, the model returns seven labels, each A, B, C, or an abstention symbol. The direct prompt requests a best guess when information is missing. The abstention prompt requests a label only when it follows from the requirement. The decoding grammar enforces the output alphabet and sequence length. It guarantees a parseable format while leaving the semantic choices to the model.
+In the controlled pilot, decoding enforces seven comma-separated symbols in $\{A,B,C,\texttt{?}\}$. The \emph{direct} prompt asks for a best guess when information is missing; the \emph{abstention} prompt instructs the model to output \texttt{?} whenever multiple labels remain permissible. Because the context-free decoding grammar permits \texttt{?} under both prompts, format validity is guaranteed without forcing non-abstention.
 
-In the API experiment, each prompt contains a requirement variant, a fixed action sequence, an assertion menu, and a compact OpenAPI operation description. OpenAPI describes the API interface \cite{openapi}. The prompt explicitly asks for Y/N decisions and warns against using a general schema response to infer an exact error for a particular scenario. The model can omit an assertion by returning N. This is the operational meaning of abstention in the API pilot.
+In the API pilot, each prompt supplies the visible requirement variant, fixed action fixture, numbered assertion menu, and compact OpenAPI operation contract \cite{openapi}, instructing the model to emit comma-separated \texttt{Y}/\texttt{N} decisions without inferring scenario-specific errors from generic schema responses. Returning \texttt{N} operationalizes assertion-level abstention.
 
-\subsection{Text Rules and Support Labels}
-For threshold requirements, the rule selector parses controlled-language patterns and enumerates permissible comparators, cutoffs, and fallback labels. It retains a probe label when all admissible interpretations agree. The evaluator separately constructs expected labels from the saved scenario references. Both procedures embody the same finite semantics, making the rule-only baseline strong in this restricted setting.
+\subsection{Lexical Rules and Support Annotations}
+For controlled threshold text, the rule selector parses the controlled grammar, enumerates admissible comparators, integer cutoffs in $[0,10]$, and fallback labels, and emits a label iff every admissible interpretation agrees. Because this matches the finite domain semantics used by the reference evaluator, rules form an exact ceiling in the controlled setting.
 
-For API requirements, rules match explicit status codes, field-equality descriptions, exact error-detail wording, and selected general success or rejection cues. The patterns were written after inspecting the sampled requirements. Some supported implications have no corresponding matched phrase, so rule coverage can be incomplete. The support labels were prepared as one study-authored annotation set. Agreement with the original service is checked for internal consistency. Independent annotation agreement remains a follow-up requirement for broader validation.
+For API text, rules match explicit HTTP codes, field-equality phrases, quoted detail strings, and general success or rejection cues (\texttt{design.py}). Written after inspecting the six FastAPI pairs, these patterns omit some paraphrased obligations and ignore multi-step sentence boundaries. Baseline support labels (\texttt{semantic\_gold.json}) were authored as one auditable annotation set verified for consistency with original-service responses; Section~\ref{sec:followup} evaluates frozen-rule transfer and eight-policy label sensitivity.
 
 \section{Experimental Design and Data Provenance}
 \subsection{Controlled Threshold Pilot}
-The controlled dataset was constructed for this pilot. It contains 12 pairs of English requirements with one complete variant and one incomplete variant. Four pairs omit whether a boundary includes equality, four omit a bounded cutoff value, and four omit a fallback output label. Each variant is evaluated at inputs 0, 3, 4, 5, 6, 7, and 10. Service names are scenario labels for the same finite task.
+The controlled benchmark comprises 12 paired English requirements (complete \texttt{exact} vs.\ incomplete \texttt{partial}): four pairs omit boundary inclusivity (\emph{comparator}), four omit the integer threshold (\emph{cutoff}), and four omit the otherwise-branch output (\emph{fallback}). Each variant is probed at $x\in\{0,3,4,5,6,7,10\}$. Running both prompts across three seeds yields $12\times2\times2\times3=144$ completions. Filtering intersects the abstention output with the deterministic rule output.
 
-For every requirement variant, both direct and abstention prompts run with three seeds. The number of actual model calls is therefore $12\times2\times2\times3=144$. Each call provides seven probe decisions. The filtered configuration reuses the abstention response and applies the text rules. The rules run deterministically once per requirement variant.
-
-Across the incomplete requirements, 42 of the 84 probe positions have a unique supported output and 42 remain underdetermined. Repetition across three seeds creates 126 supported and 126 underdetermined probe opportunities for each model-based configuration. These are repeated positions on the same 12 requirements. They define the counting unit used in the controlled results.
+Across the 12 \texttt{exact} requirements, all $84$ probe positions per seed ($252$ across three seeds) are determined, and each requirement induces six non-equivalent threshold/branch mutants ($72$ per seed, $216$ across three seeds; four shifted-cutoff mutants fall between non-probed integers). Across the 12 \texttt{partial} requirements, $42$ probe positions are determined ($24$ comparator, $4$ cutoff, $14$ fallback) and $42$ are underdetermined ($4$ comparator, $24$ cutoff, $14$ fallback), yielding $126$ determined and $126$ underdetermined opportunities over three seeds.
 
 \subsection{RESTestBench FastAPI Pilot}
-The API dataset is a purposive sample from RESTestBench, fixed at repository commit \texttt{4decc1e}. The companion audit records the full commit identifier. The selected requirement identifiers are 2, 3, 4, 6, 13, and 34. Each has a precise and a vague version. We use the corresponding FastAPI service, which is based on the Full Stack FastAPI Template \cite{fastapi}. Table~\ref{tab:sample} shows the sampled tasks and their candidate and mutant counts.
+The API pilot uses a purposive six-pair sample (IDs 2, 3, 4, 6, 13, and 34) from RESTestBench commit \texttt{4decc1e} on the Full Stack FastAPI Template \cite{kogler2026bench,restestrepo,fastapi}. Table~\ref{tab:sample} summarizes candidate counts ($|C|=44$), baseline supported counts ($|G_p|=27$, $|G_v|=16$), and associated mutants ($17$). Three seeds across two variants yield $6\times2\times3=36$ completions ($132$ binary candidate decisions per variant).
 
 \begin{table}[t]
-\caption{Frozen API sample. $|G_p|$ and $|G_v|$ count supported candidates for precise and vague requirements in one deterministic pass.}
+\caption{Frozen FastAPI sample. $|G_p|$ and $|G_v|$ count baseline supported candidates for precise and vague variants in one pass.}
 \label{tab:sample}
 \centering\small
 \begin{tabular}{r l r r r r}
@@ -161,50 +169,64 @@ ID & Scenario & $|C|$ & $|G_p|$ & $|G_v|$ & Mut.\\
 \end{tabular}
 \end{table}
 
-The API generation count is $6\times2\times3=36$ completions. Every completion selects from six to eight candidate assertions. The 44 candidates summed across scenarios give 132 candidate decisions per requirement variant over the three seeds. Candidate menus deliberately contain both supported and unsupported choices.
+Execution records comprise six original-service observations and 17 mutant observations (\texttt{observations.jsonl}). Evaluating all selectors on identical HTTP observations yields $17\times3=51$ mutant opportunities per LLM configuration while eliminating state-induced execution variance.
 
-Execution records contain six original scenario observations and 17 mutant observations. Each observation records the outcomes of the scenario's candidate checks. We then apply the raw and filtered selections to the same recorded outcomes. Consequently, 51 mutant opportunities per LLM configuration represent $17\times3$ scored evaluations. The underlying executions comprise 17 distinct mutant observations. Sharing these observations isolates assertion selection and avoids differences in service state across selectors.
-
-\subsection{Evidence Files and Scoring}
-The controlled archive contains requirement definitions, reference descriptions, the scoring program, and 144 saved generation records. The API archive contains requirement extracts, scenario definitions, the rule implementation, support labels, 36 saved model responses, 23 API observations, and detailed scoring tables. Raw model output is in \texttt{runs.jsonl}. The file \texttt{observations.jsonl} stores API outcomes. The labels appear in \texttt{semantic\_gold.json}. Per-case counts are in \texttt{comparison.csv}. Aggregates are in \texttt{summary.csv}.
-
-The artifact verifier recomputes the pilot summary tables from the stored raw records and checks them against the archived summaries. Per-requirement and per-seed results are secondary analyses of the same records. The paired follow-up and label sensitivity have separate replay commands.
+\subsection{Evidence Files and Verification}
+Archived pilots store prompts, raw completions (\texttt{runs.jsonl}), API outcomes, gold labels, per-case scores (\texttt{comparison.csv}), and summaries (\texttt{summary.csv}), verified via SHA-256 digests (\texttt{audit.json}, \texttt{SHA256SUMS.txt}). Running \texttt{verify\_all.py} verifies all published digests and recomputes both original pilots, the matched 0.5B/7B follow-up, held-out TodoApp tables, support partitions, and eight-policy sensitivity sweeps.
 
 \subsection{Measures and Counting Units}
 \label{sec:measures}
-For a selector $S$ and support set $G_r$, we count $|S\cap G_r|$ supported selections and $|S\setminus G_r|$ unsupported selections. Supported coverage divides supported selections by available supported candidates. Unsupported proportion divides unsupported selections by all selected assertions. Both aggregate numerators and denominators are summed over the relevant scenarios and seeds.
+For selector $S$ and support set $G_r$, \emph{supported coverage} is $|S\cap G_r|/|G_r|$ and the \emph{unsupported proportion} (selective risk) is $|S\setminus G_r|/|S|$, summed over scenarios and seeds. A suite satisfies the qualification predicate $Q(S,r)$ iff $S\neq\emptyset$, $S\subseteq G_r$, and every $c\in S$ passes on the original service. A mutant contributes one \emph{qualified kill} when $Q(S,r)$ holds and some $c\in S$ fails on that mutant. In the controlled \texttt{exact} task, any suite asserting a wrong label on a determined probe constitutes a \emph{false-alarm suite} and receives zero qualified kills. Alongside the primary all-mutant denominator ($51$), we report the \emph{observable-mutant} denominator restricted to mutants distinguishable by $G_r$ ($13/17$ vague FastAPI mutants, or $39$ opportunities across three seeds).
 
-A suite is qualified when it is nonempty, every selected assertion is supported, and every assertion passes on the original observation. Write this predicate as $Q(S,r)$. A mutant contributes one qualified detection when $Q(S,r)$ holds and at least one selected assertion fails on that mutant. The same suite can detect several mutants, while each mutant contributes at most once per scenario/seed evaluation.
-
-The primary detection denominator is every associated mutant opportunity. A secondary denominator includes only mutants distinguishable by at least one candidate in $G_r$. For the vague variant, this is 13 of the 17 mutants, giving 39 observable opportunities across three seeds. Reporting both denominators exposes the candidate-space limit on fault detection.
-
-\section{Results}
+\section{Results: Diagnostic Pilots (RQ1--RQ3)}
 \subsection{RQ1: Unsupported Assertions}
-Table~\ref{tab:threshold} reports the incomplete threshold requirements. The direct prompt supplied a label on 62 of 126 underdetermined opportunities. The abstention prompt reduced this count to 58. Applying the filter reduced the observed count to zero. The abstention prompt also returned an incorrect label on 34 determined opportunities. The filtered output contained no incorrect determined labels under the finite support semantics.
+Table~\ref{tab:threshold} reports the incomplete (\texttt{partial}) threshold pilot, including the structural breakdown of the abstention prompt across omission types. The direct prompt guessed on $62/126$ ($49.2\%$) underdetermined opportunities; explicit abstention instructions lowered this only marginally to $58/126$ ($46.0\%$) while still producing $34/126$ wrong labels on determined probes. Ambiguity structure strongly shaped hallucination: underdetermined guessing under the abstention prompt rose from $3/12$ ($25.0\%$) when only boundary inclusivity was omitted (\emph{comparator}) to $31/72$ ($43.1\%$) for missing \emph{cutoffs} and $24/42$ ($57.1\%$) for missing \emph{fallback} labels. Intersection filtering reduced both underdetermined guesses and wrong determined outputs to $0/126$.
 
 \begin{table}[t]
-\caption{Incomplete threshold requirements. Supported retention uses determined probes. Unsupported output uses underdetermined probes. Model-based configurations include three seeds.}
+\caption{Incomplete (\texttt{partial}) threshold requirements across three seeds (Rules: one deterministic pass). Indented rows decompose the Abstention prompt by omitted component.}
 \label{tab:threshold}
 \centering\small
 \begin{tabular}{l r r r}
 \toprule
-Method & Supported & Wrong on & Output on\\
+Method / Omission & Supported & Wrong on & Output on\\
  & retained & determined & underdetermined\\
 \midrule
 Direct & 30/126 & 45/126 & 62/126\\
 Abstention & 29/126 & 34/126 & 58/126\\
+\quad\emph{-- Comparator} & 18/72 & 16/72 & 3/12\\
+\quad\emph{-- Cutoff} & 2/12 & 7/12 & 31/72\\
+\quad\emph{-- Fallback} & 9/42 & 11/42 & 24/42\\
 Filtered & 29/126 & 0/126 & 0/126\\
 Rules & 42/42 & 0/42 & 0/42\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:api} reports the six aggregate rows of the API pilot. On precise requirements the raw model selected 73 assertions, of which 47 were supported and 26 unsupported under the original labels. Filtering removed those 26 unsupported assertions. On vague requirements it selected 84 assertions, with 28 supported and 56 unsupported. The filter retained 17 assertions, all supported by that annotation set.
+Table~\ref{tab:threshold-exact} completes the controlled pilot by reporting the previously untabulated 72 completions on complete (\texttt{exact}) requirements. Even with complete specifications, Qwen2.5-0.5B emitted wrong labels on $93/252$ (Direct) and $55/252$ (Abstention) probes---while using the grammar's \texttt{?} token on $102$ and $128$ probes---causing false alarms in $36/36$ and $33/36$ suites, respectively. Filtering removed all $55$ erroneous assertions, eliminating false-alarm suites ($0/36$).
+
+\begin{table}[t]
+\caption{Complete (\texttt{exact}) threshold requirements and mutation adequacy (36 suites and 216 mutant opportunities for LLM rows; 12 suites and 72 mutants for Rules).}
+\label{tab:threshold-exact}
+\centering\small
+\setlength{\tabcolsep}{4.2pt}
+\begin{tabular}{l r r r r}
+\toprule
+Method & Correct & Wrong & False alarms & Qualified kills\\
+\midrule
+Direct & 57/252 & 93/252 & 36/36 & 0/216\\
+Abstention & 69/252 & 55/252 & 33/36 & 9/216\\
+Filtered & 69/252 & 0/252 & 0/36 & 115/216\\
+Rules & 84/84 & 0/84 & 0/12 & 68/72\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+In the FastAPI pilot (Table~\ref{tab:api}), raw 0.5B selections contained $26/73$ ($35.6\%$) unsupported assertions on precise text and $56/84$ ($66.7\%$) on vague text. Filtering reduced unsupported assertions to $0/47$ and $0/17$ under the baseline labels, accompanied by $3/18$ precise and $6/18$ vague empty suites. As noted in Section~\ref{sec:measures}, these zero-risk counts reflect in-sample rule soundness on the six FastAPI texts rather than an unconditional guarantee.
 
 \begin{table*}[t]
-\caption{Oracle selection and qualified fault detection on FastAPI. Supported is selected/available. Unsupported is unsupported/all selected. Original pass and qualified suites count nonempty suites. Each model-based row has 18 suites and 51 mutant opportunities. Rules have six suites and 17 mutant opportunities.}
+\caption{Oracle selection and qualified fault detection on FastAPI (archived CPU pilot). Supported is selected/available. Unsupported is unsupported/all selected. Original pass and qualified suites count nonempty suites. Model-based rows cover 18 suites and 51 mutant opportunities; Rules cover six suites and 17 mutants.}
 \label{tab:api}
-\centering
+\centering\small
 \begin{tabular}{llrrrrrr}
 \toprule
 Requirement & Method & Supported & Unsupported & Empty & Original pass & Qualified suites & Qualified kills\\
@@ -220,43 +242,33 @@ Vague & Rules & 9/16 & 0/9 & 0/6 & 6/6 & 6/6 & 10/17\\
 \end{tabular}
 \end{table*}
 
-The unsupported proportion for vague raw selections is $56/84=66.7\%$. The filtered result is $0/17$. A smaller unsupported proportion describes better observed support among the assertions that remain. Empty suites are reported alongside it because an empty output contains no unsupported selections and provides no test oracle.
-
-The zero counts depend on the rules and support policy used in these pilots. In the controlled language, enumeration directly implements the permissible interpretations. In the API sample, the patterns were tuned after inspection and happened to select only supported candidates. The observed result therefore establishes a property of these finite selections and annotations. An unseen phrase or a changed annotation policy could alter the outcome.
-
 \subsection{RQ2: Supported Assertions Retained}
-The controlled filter retained 29 of 126 determined probe outcomes, or 23.0\%. This is the same count of correct determined outcomes already supplied by the abstention prompt. Filtering removes the prompt's unsupported or incorrect choices while leaving those 29 correct ones. The rule-only selector provides all 42 determined outputs in its single pass.
+In the controlled pilot, filtering preserved every correct model decision on both incomplete ($29/126$, $23.0\%$) and complete ($69/252$, $27.4\%$) requirements because complete finite enumeration covers $100\%$ of determined probes ($42/42$ and $84/84$).
 
-The denominators reflect repetition. The 42 determined positions are counted three times for model-based configurations, giving 126. The rule selector runs once and has denominator 42. Its deterministic 100\% retention is consistent with its use of the controlled grammar and complete finite enumeration.
-
-On vague API requirements, supported coverage falls from $28/48=58.3\%$ to $17/48=35.4\%$. The filter discards 11 previously selected supported assertions, or $11/28=39.3\%$ of the supported raw selections. It retains $17/28=60.7\%$ of them. The rule selector contains nine of 16 supported candidates in one pass, giving 56.3\% supported coverage.
-
-On precise API requirements, all 47 supported raw selections survive. Coverage remains $47/81=58.0\%$. Available supported candidates total 27 per seed and 81 over three seeds. Preserving those 47 selections shows that the filter's retention cost varies with the text and the rule matches. It still leaves 34 supported opportunities unselected because the original model did not choose them.
-
-Figure~\ref{fig:rates} shows the API support and detection rates together. The intersection has higher observed selection precision than the raw model, while the coverage measure exposes what was lost. Both measures are needed to interpret conservative selection.
+On precise FastAPI requirements, rules matched all $27$ supported candidates per pass, so filtering preserved all $47/81$ ($58.0\%$) supported raw selections while leaving $34$ model omissions unrecovered. On vague FastAPI requirements, however, supported coverage dropped from $28/48$ ($58.3\%$) to $17/48$ ($35.4\%$): the filter retained $17/28$ ($60.7\%$) supported model choices and vetoed $11/28$ ($39.3\%$). Across the $48$ vague opportunities, $17$ were chosen by both selectors, $11$ by $L$ alone, $10$ by $R$ alone (giving the $27/48$ rule ceiling; $9/16$ per pass), and $10$ by neither (Table~\ref{tab:partition}). Figure~\ref{fig:rates} contrasts this coverage loss against the jump in qualified detection.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{api-rates.pdf}
-\caption{API pilot rates. Supported coverage uses all supported candidate opportunities. Qualified detection uses all associated mutant opportunities. L, F, and R denote LLM, filtered, and rules. Fractions and counting units appear in Table~\ref{tab:api}.}
+\caption{Archived FastAPI pilot rates. Supported coverage uses all supported candidate opportunities; qualified detection uses all associated mutant opportunities ($L$: LLM, $F$: Filtered, $R$: Rules; exact fractions in Table~\ref{tab:api}).}
 \label{fig:rates}
-\Description{Two panels compare supported coverage and qualified mutant detection for the raw LLM, the filtered LLM, and deterministic rules under precise and vague requirements.}
+\Description{Two bar chart panels comparing supported coverage and qualified mutant detection for raw LLM, filtered intersection, and rules across precise and vague FastAPI requirements.}
 \end{figure}
 
 \subsection{RQ3: Qualified Fault Detection}
-On precise API requirements, qualified detections increase from 2/51 to 32/51 after filtering, or from 3.9\% to 62.7\%. On vague requirements they increase from 0/51 to 19/51, or from 0\% to 37.3\%. The rule-only baseline has the highest observed rates, 17/17 on precise requirements and 10/17 on vague requirements.
+In the controlled \texttt{exact} experiment (Table~\ref{tab:threshold-exact}), repairing false-alarm suites raised qualified mutant kills from $9/216$ ($4.2\%$) to $115/216$ ($53.2\%$), compared with $68/72$ ($94.4\%$) for rules alone (the four surviving mutants shift cutoffs between unprobed integers in $\{0,3,4,5,6,7,10\}$).
 
-These changes occur with unchanged action sequences and the same recorded service outcomes. Filtering improves qualification by removing unsupported checks or checks that fail on the original observation. Under the scoring rule, an unqualified suite contributes zero qualified kills even if some of its assertions can distinguish a mutant. Thus, changes in qualified kills combine suite validity and detection strength.
+In the FastAPI pilot (Table~\ref{tab:api}), qualified kills increased from $2/51$ ($3.9\%$) to $32/51$ ($62.7\%$) on precise requirements and from $0/51$ to $19/51$ ($37.3\%$) on vague requirements. Without support qualification, raw vague suites passed the original service twice and killed three mutants ($3/51$), all disqualified by accompanying unsupported checks. Because all 12 FastAPI rule suites satisfy $Q(R,r)$, Equation~\ref{eq:bound} holds strictly: rules alone kill $17/17$ precise and $10/17$ ($58.8\%$) vague mutants ($51/51$ and $30/51$ if repeated three times). Restricting to the $13$ candidate-observable vague mutants yields $19/39$ ($48.7\%$) for the filter and $10/13$ ($76.9\%$) for rules.
 
-For example, on vague requirements the raw model has two suites passing the original service and three mutant detections if only original compatibility is required. Those suites contain unsupported assertions, so none of their detections qualifies under the full criterion. The filtered configuration has 12 nonempty passing suites, all supported, and detects 19 mutant opportunities. The increase reflects the definition and the resulting valid selections.
+\subsection{Mechanistic Breakdown by Requirement and Seed}
+Table~\ref{tab:byreq} decomposes the vague filtered FastAPI row, exposing two distinct failure mechanisms behind aggregate retention loss and empty suites:
 
-The observable-candidate denominator offers a second view. Four vague-variant mutants cannot be distinguished by any supported candidate in the fixed menu. Over the remaining 13 mutants, the filter obtains $19/39=48.7\%$ and rules obtain $10/13=76.9\%$. The raw all-mutant denominators retain the influence of requirement detail and candidate expressiveness. The restricted denominators show the selectors' performance within that expressiveness limit.
+\emph{1) Pre-filter model omission vs.\ lexical paraphrase veto in empty suites.} Of the six vague empty filtered suites, five already have $L(r)\cap G_r=\emptyset$ prior to filtering: requirement~3 (seed~47), requirement~4 (seed~11), and requirement~34 across all three seeds (where raw completions select unsupported checks such as \texttt{can\_login} or \texttt{http\_200} while omitting \texttt{success}). Only one empty suite---requirement~2 at seed~47---is caused by a rule veto: the model selects \texttt{same\_owner} ($\in G_v$) alongside \texttt{http\_200} (passing the original service and killing two mutants), and the rule gate discards \texttt{same\_owner} because its regex requires \emph{``exactly match''} whereas the vague requirement reads \emph{``Ensure the retrieved item matches the created one.''} All three precise empty suites begin with $L(r)\cap G_p=\emptyset$.
 
-\subsection{Breakdown by Requirement and Seed}
-Table~\ref{tab:byreq} decomposes the vague filtered row. Requirement 13 retains all six supported opportunities across the three seeds and detects six of nine mutant opportunities. Requirement 34 yields an empty filtered selection for each seed, giving zero of nine detections. These differences explain why an aggregate result can hide distinct failure mechanisms.
+\emph{2) Field-level paraphrase vetoes cause escaped data-corruption mutants.} On requirement~2 at seeds~11 and~23, Qwen2.5-0.5B selects four supported assertions (\texttt{same\_id}, \texttt{same\_owner}, \texttt{same\_title}, \texttt{success}) alongside hallucinated status checks. Filtering removes the status hallucinations---rescuing original compatibility---but vetoes \texttt{same\_id}, \texttt{same\_owner}, and \texttt{same\_title}, leaving only \texttt{success} and allowing both data-corrupting mutants (\texttt{WRONG\_TITLE} and altered \texttt{owner\_id}) to escape ($2/9$ kills). Likewise, on requirement~6 at seed~23, the lexical gate vetoes the model's supported \texttt{updated\_title} and \texttt{updated\_description} selections, letting the title-corrupting mutant escape ($3/9$ kills despite $3/3$ qualified suites). On requirement~3 at seeds~11 and~23, rules match \texttt{denied} on \emph{``not-found response''} but veto \texttt{http\_404} because status rules require the keyword \texttt{status} or \texttt{HTTP}. Across seeds $(11,23,47)$, vague filtered selections retain $(5,7,5)$ supported checks and detect $(6,8,5)$ of $17$ mutants ($17/48$ and $19/51$ in total).
 
 \begin{table}[t]
-\caption{Vague filtered selections by requirement, summed over three seeds. Qualified counts nonempty supported suites that pass the original service.}
+\caption{Archived vague filtered selections by FastAPI requirement across three seeds.}
 \label{tab:byreq}
 \centering\small
 \begin{tabular}{rrrr}
@@ -275,31 +287,23 @@ Total & 17/48 & 12/18 & 19/51\\
 \end{tabular}
 \end{table}
 
-Requirement 2 has 15 supported opportunities but retains only two. A low count can result from either the model omitting useful candidates or the rule selector failing to match supported wording. Requirement 6 retains five of 15 supported opportunities and qualifies for all three seeds, yet detects three of nine mutant opportunities. Qualification and detection therefore describe different aspects of the selected suite.
-
-For seeds 11, 23, and 47, the vague filtered configuration retains five, seven, and five supported assertions. It qualifies for four, five, and three of the six requirements and detects six, eight, and five of 17 mutant opportunities respectively. Summing the supported selections gives 17. Summing the detection counts gives 19. Each seed uses the same six requirements and 17 mutant observations.
-
-The small repeated sample supports descriptive counts. Requirements and their mutants form related observations, and seeds repeat the same tasks. Statistical inference about new projects would require a broader design with appropriate grouping and repeated execution.
-
-\section{RQ4: A Larger Model and Frozen Rules}
+\section{RQ4: Model Scale, Frozen Rules, and Policy Sensitivity}
 \label{sec:followup}
 
 \subsection{Paired Design}
-We compared Qwen2.5-0.5B-Instruct and Qwen2.5-7B-Instruct in Q4\_K\_M format \cite{qwen2024,qwen7b2024}. Both models used llama.cpp b5046, the same Vulkan runtime, a 2048-token context, and the original API prompts, grammar, temperature 0.3, top-$k$ 40, top-$p$ 0.95, and seeds 11, 23, and 47. We enabled prompt-prefix caching for both models after a CPU-only 7B trial exceeded the request timeout. The archived controlled-language pilot uses only 0.5B. Each follow-up model makes 36 FastAPI completions. Primary scoring reuses the same 23 recorded FastAPI responses and the pilot labels.
+To test whether scaling model capacity mitigates omissions beneath the rule ceiling and whether frozen lexical rules transfer to an unseen service, we compared Qwen2.5-0.5B-Instruct and Qwen2.5-7B-Instruct (\texttt{Q4\_K\_M}) \cite{qwen2024,qwen7b2024} under \texttt{llama.cpp} \texttt{b5046} using a matched Windows Vulkan backend, a 2048-token context, prompt-prefix caching (enabled after CPU-only 7B inference exceeded request timeouts), and identical prompts, grammars, sampling hyperparameters, and seeds $(11,23,47)$. Each model produced 36 FastAPI completions scored against the 23 archived HTTP observations.
 
-We froze the rule implementation and held-out selection criteria in Git before screening TodoApp requirements from the same pinned RESTestBench revision. We screened 14 IDs in ascending order, selected the first eligible requirement for each distinct HTTP method and route, and found four eligible pairs under a cap of six. The pairs concern a rejected creation and successful retrieval, deletion, and update of a todo. We froze the two requirement variants per pair and their support labels before running inference. Gold labels come from one annotation set with recorded rationales. TodoApp contributes 24 completions per model and uses an eight-candidate status menu from the original rule vocabulary. We measure support and retention on TodoApp, with fault detection evaluated on the FastAPI records. The TodoApp status menu leaves body obligations and persistence outside the measured candidate space.
+Before screening held-out candidates, we froze \texttt{design.py} and \texttt{pilot.py} by SHA-256 in Git and screened all 14 TodoApp (.NET/C\#) requirements from the same RESTestBench commit in ascending ID order. Selecting the first non-auth requirement per distinct HTTP method and route yielded four pairs: rejected creation (ID~2, \texttt{POST /todos}) and successful retrieval (ID~3, \texttt{GET}), deletion (ID~6, \texttt{DELETE}), and update (ID~9, \texttt{PUT}). Requirement texts, fixtures, an eight-item status menu from the frozen rule vocabulary, and one rationale-backed support set were committed prior to running 24 completions per model. TodoApp evaluates status-oracle support and retention; response-body fields and database persistence lie outside its status-only menu.
 
 \input{followup/manuscript-results.tex}
 
 \section{Worked Example: Access to Another User's Item}
-RESTestBench requirement 4 concerns reading an item owned by another user. The vague variant asks the tester to verify that a second user cannot read that item and that access is denied. The precise variant specifies registration, authentication, item creation, the second user's access attempt, HTTP 400, and the JSON detail text \texttt{Not enough permissions}. These variants have different supported assertion sets in the pilot.
+RESTestBench requirement~4 illustrates how requirement specificity governs observable fault detection. The vague variant asks to verify that a second user cannot read another user's item and that access is denied ($G_v=\{\texttt{denied}\}$, checking HTTP 4xx). The precise variant specifies registration, authentication, item creation, cross-user read, HTTP~400, and JSON detail \texttt{Not enough permissions} ($G_p=\{\texttt{denied},\texttt{http\_400},\texttt{no\_permission}\}$).
 
-For the vague variant, the annotation set contains only \texttt{denied}, implemented as a 4xx status-class check. For the precise variant it additionally contains \texttt{http\_400} and \texttt{no\_permission}. This policy allows a direct demonstration of what increasing requirement detail makes observable to a supported oracle.
-
-The fixed scenario creates two ordinary accounts, authenticates them, creates an item as the first account, and retrieves it as the second. The original observation returns HTTP 400 with the expected permission detail. One associated mutant retains HTTP 400 and changes the detail to \texttt{Item not found}. Table~\ref{tab:example} shows how the two checks behave on these responses.
+On the original FastAPI service, the cross-user \texttt{GET} returns HTTP~400 with \texttt{Not enough permissions}. Mutant~2 preserves HTTP~400 while changing the detail to \texttt{Item not found} (Table~\ref{tab:example}). Under the vague requirement, \texttt{denied} passes on both versions, leaving Mutant~2 unobservable within $G_v$; under the precise requirement, the supported detail check kills it. Conversely, when a model guesses \texttt{http\_400} or \texttt{no\_permission} from the vague prompt, that check passes on the original service by coincidence yet enforces an unstated contract obligation, explaining why qualification excludes it. The portable \texttt{http\_demo.py} launcher reproduces both live HTTP responses inside an isolated Docker Compose stack with SHA-256 container source verification.
 
 \begin{table}[t]
-\caption{Requirement 4 message-changing mutant. The detailed check detects the changed message under the precise requirement.}
+\caption{Requirement 4 message-changing mutant. Detailed checks are supported and discriminative only under the precise requirement.}
 \label{tab:example}
 \centering\small
 \begin{tabular}{@{}p{0.41\columnwidth} p{0.24\columnwidth} p{0.24\columnwidth}@{}}
@@ -308,116 +312,80 @@ Observation or check & Original & Mutant\\
 \midrule
 HTTP status & 400 & 400\\
 JSON detail & {\raggedright Not enough permissions\par} & {\raggedright Item not found\par}\\
-Status is 4xx & Pass & Pass\\
-{\raggedright Status is 400 and detail matches\par} & Pass & Fail\\
+Status is 4xx (\texttt{denied}) & Pass & Pass\\
+{\raggedright Status 400 \& detail matches\par} & Pass & Fail\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The broad check continues to pass after the message change. The detailed check fails on the mutant because the precise requirement fixes that message. The mutant is outside the vague variant's supported observation capability in this menu. This example explains the difference between every associated mutant and every candidate-observable mutant in the detection denominator.
-
-An exact code or detail can also be coincidentally correct on the original implementation while lacking textual support in the vague variant. Such a check is excluded by the qualification policy. Checking the code's current response alone would provide evidence of compatibility, while the requirement-support annotation records whether the test imposes a stated obligation.
-
-The demonstration script reproduces this distinction with actual HTTP requests. It launches an isolated Docker Compose project, checks the original service, applies the benchmark mutation, restarts the backend, verifies the running source file against its local digest, and repeats the scenario. The project is then stopped and its temporary resources are removed. This single live example illustrates the mechanism underlying the saved evaluation.
-
 \section{Discussion}
-\subsection{What the Filter Achieves}
-The pilots show that agreement filtering can remove unsupported choices made by a small model under a fixed candidate representation. In the API sample it also increases the number of nonempty suites that pass the original service. The detailed coverage counts show when this improvement comes with the loss of supported assertions. These observations support evaluating a filter along both selection support and fault detection.
+\subsection{Selective Risk, Paraphrase Bottlenecks, and Scale}
+Across both pilots, intersection filtering eliminates in-sample unsupported assertions and converts failing raw LLM selections into compatible, fault-detecting suites. However, decomposing $G_r$ reveals a structural asymmetry: in a closed formal grammar (controlled thresholds), enumerative rules preserve $100\%$ of valid model choices, whereas on natural-language API requirements, phrase-level rules veto valid semantic inferences whenever requirements paraphrase field or status obligations (e.g., R2 and R6 on FastAPI; $12/12$ empty suites on vague TodoApp).
 
-The controlled and API tasks expose different retention patterns. In the finite grammar, the rule selector covers every determined probe and preserves all correct choices made by the abstention prompt. In the API sample, phrase-based rules cover only part of the supported vague menu and discard 11 correct raw selections. The latter case is more representative of the incompleteness expected from a small manually written phrase library.
+Scaling from 0.5B to 7B substantially improves seed stability and raw compatibility, yet sharpens two lessons. First, on vague requirements, stronger models more frequently infer plausible REST conventions that match the reference service ($23/51$ compatible kills vs.\ $5/51$ qualified kills), demonstrating that execution-only mutation benchmarks can reward specification-ungrounded guessing \cite{konstantinou2024,ding2026}. Second, under an unchanged rule gate, 7B's extra valid inferences fall into the vetoed $L$-only bucket ($13\to 16$), leaving filtered vague kills bounded below the $27/48$ rule ceiling.
 
-\subsection{The Role of the Rule-Only Baseline}
-The rule-only baseline achieves the highest detection rate in both API requirement variants. The intersection is bounded by the rule set and can lose an assertion that rules selected correctly when the model omits it. The observed data therefore favor rules alone for this particular sample and annotation policy. In this diagnostic design, the rule-only configuration provides an informative reference for the omissions introduced by the additional model-selection stage. The comparison identifies when agreement filtering improves the validity of selected suites and when its retention bottleneck reduces their detection capability.
+\subsection{When the Rule-Only Baseline Succeeds and Fails}
+In-sample, rules alone achieve the highest FastAPI detection rates ($17/17$ precise, $10/17$ vague), a consequence predicted by Equation~\ref{eq:bound} whenever $Q(R,r)$ holds on texts inspected during rule design. Out-of-sample transfer to TodoApp exposes the fragility of non-syntactic regex rules in both directions: complete recall collapse on paraphrased vague prompts ($0/4$ suites) and cross-step scope leakage on multi-step precise deletion (attaching a follow-up \texttt{GET}'s \texttt{404} to \texttt{DELETE} to form the contradictory suite $\{\texttt{http\_200},\texttt{success},\texttt{denied}\}$). Because both models also misread that multi-step boundary, selector agreement fails precisely where syntactic discourse parsing (linking each condition and status obligation to its target HTTP operation \cite{fischbach2023}) is required.
 
-Rules were written after reading the FastAPI samples. The controlled grammar was crafted to admit finite interpretation. These choices favor the rules in their development setting. Section~\ref{sec:followup} measures transfer of the exact API rules to another service.
+\subsection{From Passive Filtering to Clarification Workflows}
+Our harness fixes setup actions, fixtures, and candidate menus, isolating oracle selection from end-to-end scenario synthesis \cite{ferreira2025,kogler2025restifai,shi2026}. Rather than silently returning an empty filtered suite or vetoing paraphrased field checks, a practical pipeline can combine step-scoped semantic entailment checks with ambiguity-triggered clarification---requesting stakeholder confirmation for undecided status codes, response fields, or boundary rules, as demonstrated for code generation in ClarifyGPT \cite{mu2024clarify} and request-level gating in RSGA \cite{madani2026}.
 
-\subsection{From Oracle Selection to Test Generation}
-The experimental harness supplies action sequences, authentication setup, candidate checks, and response evaluators. A complete generation workflow also needs to construct these artifacts, maintain state, choose data, and produce executable code. Existing acceptance-test and REST workflows address portions of that wider problem \cite{ferreira2025,kogler2025restifai}. Our measurements isolate the final selection decision inside such a workflow.
-
-An extended system could attach an evidence span to each assertion, distinguish assumptions from stated obligations, and request clarification for a missing code or boundary. Evaluating that design would require measures for evidence accuracy, reviewer effort, and the handling of empty selections. These are proposed extensions arising from the observed failure modes.
-
-\subsection{Independent Annotation}
-An independent annotation exercise should ask two human raters to label candidates using the visible requirement variant, fixed scenario, and a written interpretation policy. The FastAPI menu contains 44 candidates per variant, yielding 88 binary decisions per rater. Initial labeling should blind raters to model selections, rule matches, and mutant outcomes. Report the confusion matrix, raw agreement, and Cohen's kappa for the nominal labels before adjudication \cite{cohen1960}, then rescore all configurations under the adjudicated labels.
+\subsection{Independent Annotation Protocol}
+\label{sec:annotation}
+While our eight-policy replay quantifies how interpretive choices flip model-size rankings, establishing ground-truth reliability requires blind multi-rater annotation. Two independent raters should label all 88 FastAPI (and 16 TodoApp) candidate--variant pairs using only the visible text, fixed fixture, and written policy, blinded to model masks, rule matches, and mutant outcomes, reporting the $2\times2$ confusion matrix, raw agreement, and Cohen's $\kappa$ \cite{cohen1960} prior to adjudication and rescoring.
 
 \section{Threats to Validity}
 \subsection{Construct Validity}
-Requirement support is operationalized by finite interpretations in the controlled task and a study-authored annotation set in the API task. Interpreting denial as a 4xx check is a policy choice. Broader domain conventions or a different interface contract could support a different set. The saved labels make this decision inspectable, and a label revision should trigger rescoring.
-
-The candidate menus constrain what can be expressed and detected. A supported oracle outside the menu cannot contribute to coverage or mutant detection. Four vague-variant mutants remain indistinguishable under the available supported candidates. The secondary observable denominator makes this limitation explicit, while the primary denominator retains its practical effect.
-
-Qualified kills combine support, nonemptiness, original pass, and mutant failure. A low value can arise through any of these components. Reporting all components avoids interpreting a change in qualification as a pure improvement in behavioral strength. Assertions such as a general success check and an exact status check can overlap semantically, so coverage counts reflect the supplied menu.
+Operationalizing requirement support via $G_r$ encodes policy assumptions (e.g., mapping general denial to 4xx). Our eight-policy sensitivity sweep exposes this dependence directly, though human inter-rater reliability remains unmeasured. Fixed candidate menus also bound expressiveness: four vague FastAPI mutants and TodoApp body/persistence properties lie outside the supported menu, which we make explicit via observable-mutant denominators. Finally, qualified kills couple nonemptiness, support, original pass, and mutant failure; reporting raw, compatible, and qualified counts prevents conflating validity repair with assertion strength.
 
 \subsection{Internal Validity}
-The API labels and phrase rules were developed within the same small study. Separate files distinguish their roles, but their preparation is subject to shared judgment. The study includes one annotation set and lacks a measured inter-rater agreement estimate. A blind independent annotation exercise would strengthen the semantic evaluation.
-
-The rules were informed by the sample text. This favors the deterministic baseline and can overstate filter reliability on future requirements. The finite grammar similarly favors the enumerating selector. Our results should be read together with these design facts.
-
-Recorded API outcomes are reused for every selected suite. This controls state and execution variability across methods, while preventing the scoring stage from measuring flakiness or request-generation failures. A full replication should repeat service executions and check dependencies, timings, and database initialization.
+FastAPI lexical rules and baseline labels were authored after reading the six FastAPI pairs, favoring in-sample rule precision and motivating the pre-committed TodoApp holdout. Reusing 23 recorded FastAPI observations isolates oracle selection from network/database flakiness, and a fresh Docker re-observation confirmed $23/23$ exact matches (\nolinkurl{VALIDATION.md}). However, our finding that CPU (\nolinkurl{cache_prompt=false}) and Vulkan (\nolinkurl{cache_prompt=true}) agreed on only $16/36$ discrete 0.5B masks highlights floating-point and KV-cache sensitivity under quantized sampling \cite{sallou2024}, which we controlled in RQ4 by pairing 0.5B and 7B on the identical Vulkan stack.
 
 \subsection{External and Conclusion Validity}
-The model-size comparison uses two quantized models from one family. It covers English requirements and fixed candidate menus. FastAPI covers 17 distinct seeded faults and 51 scored opportunities per model configuration. TodoApp contributes one held-out service, four requirement pairs, and an assertion menu restricted to response status. Its labels were prepared by one annotator and training overlap was unaudited. The three seeds repeat the same tasks. Transfer to other projects, languages, model families, and assertion representations requires broader coverage.
-
-Benchmark artifacts are publicly available. Model training overlap has not been independently audited. Work using post-cutoff oracle datasets illustrates one way to examine this issue \cite{molinelli2025}. Fixed inputs and constrained decoding also change the difficulty relative to free-form test generation.
-
-A held-out fault-detection study should execute the fixed TodoApp scenarios against the original service and requirement-associated mutants, using the property-based and requirements-based mutation designs of Bartocci et al. and RESTestBench \cite{bartocci2023,kogler2026bench}. The same observations can be scored for all selectors under the qualification rule in Section~\ref{sec:measures}. Reporting associated and candidate-observable mutant counts would expose limits imposed by the status menu.
-
-The expanded analyses are descriptive. Counts repeated across seeds are dependent on the same requirements and observations. We report their exact denominators and avoid treating 51 evaluations as 51 independent software faults. Mutation operators approximate selected error mechanisms, so rates on these mutants provide scoped evidence about test behavior \cite{papadakis2019,bartocci2023}.
+Empirical scope is bounded by two quantized Qwen2.5 sizes (0.5B and 7B), English requirements, 12 synthetic threshold pairs, six FastAPI pairs (17 mutants), and four TodoApp status pairs without TodoApp mutant execution. Public RESTestBench artifacts were not audited for pretraining overlap \cite{molinelli2025,sallou2024}, and grammar-constrained menu selection differs from open-ended assertion synthesis \cite{ma2026,togbench2026}. Because three seeds repeat the same requirement clusters and mutant observations, all counts are reported descriptively with exact denominators and per-seed ranges rather than unclustered $p$-values.
 
 \section{Reproducibility}
-The supplementary replication materials contain the controlled threshold data, API requirement extracts, model responses, API observations, and scorers. The archive verifier reproduces the original pilots. The \texttt{followup/} directory contains the protocol freeze, held-out source and labels, raw completions, model checksums, and a separate API replay command. Appendix~\ref{app:replay} gives the archived pilot filenames and command.
-
-There are three reproduction levels. Rescoring reads the saved model responses and API outcomes. Regeneration executes new model calls using the frozen prompts, model, grammar, and sampler configuration. Live execution reruns API scenarios against the original and mutated services. Rescoring verifies the transformation from raw records to tables. Regeneration and repeated execution assess repeatability under a specified runtime.
-
-The benchmark repository checkout and the FastAPI Docker image remain dependencies of the live demonstration. The archive-based scoring path uses standard Python facilities. Runtime paths should be configured for the current machine, and model weights and Docker dependencies should be available before a live presentation. Appendix~\ref{app:replay} gives the short scoring procedure and its expected output.
+The replication repository provides all prompts, raw completions, HTTP observations, frozen-rule hashes, sensitivity scripts, and portable Docker demonstration sources across three verification tiers: deterministic \emph{rescoring} (\nolinkurl{verify_all.py} and \nolinkurl{verify_paper_results.py}), local LLM \emph{regeneration} (\nolinkurl{followup/run_api.py} with pinned GGUF and \texttt{llama.cpp} SHA-256 digests in \nolinkurl{followup/environment.json}), and isolated \emph{live HTTP execution} (\nolinkurl{http_demo.py}). Appendix~\ref{app:replay} details the replay commands.
 
 \section{Conclusion}
-We studied assertion selection for test cases derived from complete and underspecified natural-language requirements. A small Qwen model, deterministic text rules, and their intersection were evaluated with fixed probes and fixed API scenarios. Filtering removed the observed unsupported selections in both pilots. On vague API requirements it reduced supported coverage from 28/48 to 17/48 while increasing qualified detections from 0/51 to 19/51. Rules alone achieved the highest observed detection rates under the sampled texts and annotation policy.
+We evaluated assertion-level test oracle selection from complete and underspecified natural-language requirements by comparing LLM selection, deterministic lexical rules, and their intersection. Across controlled threshold and FastAPI pilots, intersection filtering removed in-sample unsupported assertions and false-alarm suites, raising qualified vague FastAPI mutant detections from $0/51$ to $19/51$ while forfeiting $11$ supported model choices ($28/48$ to $17/48$) to lexical paraphrase vetoes.
 
-Under matched settings, the 7B gain in filtered coverage on vague FastAPI requirements depends on the interpretation of the update response. Qualified detections for vague requirements are lower at 7B under all eight studied label policies. Both models return empty filtered suites for all vague TodoApp evaluations because the frozen rules select no candidate. The rule ceiling explains what increasing model capacity can recover, while broader service coverage and independent support annotation would test how often that limit dominates.
+In a matched Vulkan comparison, scaling from Qwen2.5-0.5B to 7B stabilized seed variance and raised unvetted original-compatible vague kills from $2/51$ to $23/51$, but $18$ of those kills relied on unstated implementation conventions ($5/51$ raw qualified kills, $21/51$ filtered vs.\ $22/51$ at 0.5B), and filtered coverage rankings reversed across plausible response-field annotation policies. Transferring frozen rules to held-out TodoApp requirements produced $12/12$ empty vague suites and a contradictory cross-step deletion suite ($2\text{xx}\wedge 4\text{xx}$). Future requirements-driven testing pipelines should pair step-scoped semantic grounding with interactive ambiguity clarification and multi-rater support benchmarks.
 
 \section*{Data Availability Statement}
-The \href{https://github.com/lythean2508/Evaluating-LLM-Selected-Test-Oracles-for-Underspecified-Natural-Language-Requirements/releases/tag/v1.0.0}{versioned release} archives the diagnostic pilots. The \href{https://github.com/lythean2508/Evaluating-LLM-Selected-Test-Oracles-for-Underspecified-Natural-Language-Requirements/tree/main/followup}{follow-up artifact} provides the paired completion logs, frozen-rule protocol, label-policy cases, and replay commands.
+The original diagnostic pilots are archived in \href{https://github.com/lythean2508/Evaluating-LLM-Selected-Test-Oracles-for-Underspecified-Natural-Language-Requirements/releases/tag/v1.0.0}{GitHub release v1.0.0}, and the full replication package---including the paired 0.5B/7B completions, held-out TodoApp protocol, eight-policy sensitivity analyzer, and \texttt{verify\_all.py}---is publicly available at \url{https://github.com/lythean2508/Evaluating-LLM-Selected-Test-Oracles-for-Underspecified-Natural-Language-Requirements}.
 
 \section*{Disclosure of AI Use}
-OpenAI Codex assisted with prose editing and implementation of the follow-up replay tools. An exploratory AI-assisted reading surfaced candidate ambiguities for the label sensitivity analysis. That analysis applies specified changes to existing annotations and replays recorded observations. The independent human annotation described in Section~9.4 remains proposed.
+AI coding and writing assistants (OpenAI Codex and Google Gemini) assisted with repository verification scripts, bibliography cross-checking, prose editing, and surfacing candidate interpretive switches for the deterministic eight-policy sensitivity replay. All numerical tables are computed deterministically from the archived execution and completion logs; independent human support annotation (Section~\ref{sec:annotation}) remains future work.
 
 \appendix
 \section{Replaying the Stored Evidence}
 \label{app:replay}
-The supplementary package contains the following two data archives and verification script.
+With Python 3.12 or later in the repository root, verify all published SHA-256 digests and recompute the archived pilots, paired 0.5B/7B FastAPI and TodoApp tables, four-part support partitions, and eight-policy sensitivity sweeps via:
 \begin{quote}\small\ttfamily
-replication-controlled-pilot.zip\\
-replication-restestbench-pilot.zip\\
-verify\_paper\_results.py
+python verify\_all.py --output verification-run
 \end{quote}
-Keep these three files in the same folder. Use Python 3.12 or later and open a terminal in that folder. Run
+To replay the standalone v1.0.0 archives (\nolinkurl{replication-controlled-pilot.zip} and \nolinkurl{replication-restestbench-pilot.zip}) directly, run:
 \begin{quote}\small\ttfamily
 python verify\_paper\_results.py score
 \end{quote}
-The first displayed pilot should contain 58/126, 0/126, 29/126, and 42/42. The API table should contain all six rows of Table~\ref{tab:api}. The final PASS message confirms that rescoring agrees with the frozen summaries. The stored raw files remain available for inspection in the printed replay location.
+Expected standalone output displays $58/126\to 0/126$, $29/126$, and $42/42$ for incomplete thresholds alongside all six rows of Table~\ref{tab:api}, ending with \texttt{PASS}. For arithmetic cross-checks on Table~\ref{tab:byreq}, vague filtered retention sums to $(2+2+2+5+6+0)/48=17/48$ and qualified kills sum to $(2+4+4+3+6+0)/51=(6+8+5)/51=19/51$. With Docker Desktop (Linux Engine), \texttt{python http\_demo.py --interactive} reproduces live HTTP~400 original (\texttt{Not enough permissions}) and mutated (\texttt{Item not found}) responses for requirement~4.
 
-\noindent\begin{minipage}{\columnwidth}
-For an arithmetic spot check, sum the vague filtered row of the per-requirement table. Supported retention is $(2+2+2+5+6+0)/48=17/48$. Qualified detections are $(2+4+4+3+6+0)/51=19/51$. The alternative seed sum is $(6+8+5)/51=19/51$. These are two decompositions of the same saved evaluations.
-\end{minipage}\par
-
-The live demonstration additionally needs a Python environment with the API-script dependencies, Docker Desktop with a running Linux Engine, the existing benchmark checkout, and the frozen backend and PostgreSQL images. Its mode is \texttt{live}. The original response should be HTTP 400 with permission detail and the mutant response HTTP 400 with item-not-found detail. The detailed assertion's failure on the mutant is the expected detection event.
-
-\section{Interpretation Audit}
-The controlled denominator 126 counts 42 probe positions over three seeds. The vague API denominator 48 counts 16 supported menu candidates over three seeds. The precise denominator 81 counts 27 supported candidates over three seeds. The detection denominator 51 counts 17 mutants over three seeds. These denominators represent different quantities and should be retained when presenting percentage results.
-
-For the vague filtered method, zero unsupported assertions means zero among 17 retained selections. Six of the 18 suites are empty. For precise requirements, keeping all 47 supported raw selections means preserving those already selected, with 81 supported opportunities available overall. These distinctions make it possible to explain the paper's results using the raw records and the evaluation policy.
+\section{Counting-Unit Audit}
+In the controlled pilot, $252$ (\texttt{exact}) and $126$ (\texttt{partial}) count $84$ and $42$ probe positions across three seeds; $216$ counts $72$ threshold mutants across three seeds. In FastAPI, $81$ and $48$ count $27$ precise and $16$ vague supported candidates across three seeds, and $51$ counts $17$ mutants across three seeds ($39$ for the $13$ vague observable mutants). On TodoApp, $24$ and $12$ count $8$ precise and $4$ vague supported status candidates across three seeds. Zero unsupported assertions in filtered vague FastAPI ($0/17$ CPU; $0/18$ and $0/20$ Vulkan) is conditional on nonempty retained selections alongside $6/18$, $5/18$, and $4/18$ empty suites, respectively.
 
 \balance
 \begin{thebibliography}{99}
-\bibitem{barr2015} Earl T. Barr, Mark Harman, Phil McMinn et al. 2015. The Oracle Problem in Software Testing: A Survey. \emph{IEEE Transactions on Software Engineering 41(5), 507-525}. \url{https://doi.org/10.1109/TSE.2014.2372785}.
+\raggedright
+\bibitem{barr2015} Earl T. Barr, Mark Harman, Phil McMinn et al. 2015. The Oracle Problem in Software Testing: A Survey. \emph{IEEE Transactions on Software Engineering 41(5), 507--525}. \url{https://doi.org/10.1109/TSE.2014.2372785}.
 
-\bibitem{yang2025} Zhenzhen Yang, Rubing Huang, Chenhui Cui et al. 2026. Requirements-Based Test Generation: A Comprehensive Survey. \emph{ACM TOSEM, accepted manuscript}. \url{https://doi.org/10.1145/3771727}.
+\bibitem{yang2025} Zhenzhen Yang, Rubing Huang, Chenhui Cui et al. 2026. Requirements-Based Test Generation: A Comprehensive Survey. \emph{ACM Transactions on Software Engineering and Methodology, accepted manuscript}. \url{https://doi.org/10.1145/3771727}.
 
-\bibitem{wang2024survey} Junjie Wang, Yuchao Huang, Chunyang Chen et al. 2024. Software Testing with Large Language Models: Survey, Landscape, and Vision. \emph{IEEE Transactions on Software Engineering 50(4), 911-936}. \url{https://doi.org/10.1109/TSE.2024.3368208}.
+\bibitem{wang2024survey} Junjie Wang, Yuchao Huang, Chunyang Chen et al. 2024. Software Testing with Large Language Models: Survey, Landscape, and Vision. \emph{IEEE Transactions on Software Engineering 50(4), 911--936}. \url{https://doi.org/10.1109/TSE.2024.3368208}.
 
 \bibitem{folorunsho2026} Orimoloye Folorunsho, Hassan Reza. 2026. AI-Driven Test Case Generation from Natural Language Requirements: A Survey of Techniques and Research Gaps. \emph{Preprint}. \url{https://arxiv.org/abs/2606.06563}.
 
-\bibitem{wang2022umtg} Chunhui Wang, Fabrizio Pastore, Arda Goknil et al. 2022. Automatic Generation of Acceptance Test Cases from Use Case Specifications: An NLP-Based Approach. \emph{IEEE Transactions on Software Engineering 48(2), 585-616}. \url{https://doi.org/10.1109/TSE.2020.2998503}.
+\bibitem{wang2022umtg} Chunhui Wang, Fabrizio Pastore, Arda Goknil et al. 2022. Automatic Generation of Acceptance Test Cases from Use Case Specifications: An NLP-Based Approach. \emph{IEEE Transactions on Software Engineering 48(2), 585--616}. \url{https://doi.org/10.1109/TSE.2020.2998503}.
 
 \bibitem{fischbach2023} Jannik Fischbach, Julian Frattini, Andreas Vogelsang et al. 2023. Automatic Creation of Acceptance Tests by Extracting Conditionals from Requirements: NLP Approach and Case Study. \emph{Journal of Systems and Software 197, 111549}. \url{https://doi.org/10.1016/j.jss.2022.111549}.
 
@@ -425,23 +393,23 @@ For the vague filtered method, zero unsupported assertions means zero among 17 r
 
 \bibitem{ferreira2025} Margarida Ferreira, Luis Viegas, Joao Pascoal Faria et al. 2025. Acceptance Test Generation with Large Language Models: An Industrial Case Study. \emph{IEEE/ACM International Conference on Automation of Software Test}. \url{https://doi.org/10.1109/AST66626.2025.00007}.
 
-\bibitem{masuda2025} Satoshi Masuda, Satoshi Kouzawa, Kyousuke Sezai et al. 2025. Generating High-Level Test Cases from Requirements using LLM: An Industry Study. \emph{Preprint}. \url{https://arxiv.org/abs/2510.03641}.
+\bibitem{masuda2025} Satoshi Masuda, Satoshi Kouzawa, Kyousuke Sezai et al. 2026. Generating High-Level Test Cases from Requirements using LLM: An Industry Study. \emph{IEEE International Conference on Artificial Intelligence, Computer, Data Sciences and Applications (ACDSA)}. \url{https://arxiv.org/abs/2510.03641}.
 
 \bibitem{moradi2026} Milad Moradi, Ke Yan, David Colwell et al. 2026. An empirical study of LoRA-based fine-tuning of large language models for automated test case generation. \emph{Preprint}. \url{https://arxiv.org/abs/2604.06946}.
 
 \bibitem{xue2026} Zhiyi Xue, Xiaohong Chen, Min Zhang. 2026. Explicating Tacit Regulatory Knowledge from LLMs to Auto-Formalize Requirements for Compliance Test Case Generation. \emph{Preprint}. \url{https://arxiv.org/abs/2601.09762}.
 
-\bibitem{endres2024} Madeline Endres, Sarah Fakhoury, Saikat Chakraborty et al. 2024. Can Large Language Models Transform Natural Language Intent into Formal Method Postconditions?. \emph{Proceedings of the ACM on Software Engineering}. \url{https://doi.org/10.1145/3660791}.
+\bibitem{endres2024} Madeline Endres, Sarah Fakhoury, Saikat Chakraborty et al. 2024. Can Large Language Models Transform Natural Language Intent into Formal Method Postconditions? \emph{Proceedings of the ACM on Software Engineering}. \url{https://doi.org/10.1145/3660791}.
 
-\bibitem{dinella2022} Elizabeth Dinella, Gabriel Ryan, Todd Mytkowicz et al. 2022. TOGA: A Neural Method for Test Oracle Generation. \emph{International Conference on Software Engineering}. \url{https://arxiv.org/abs/2109.09262}.
+\bibitem{dinella2022} Elizabeth Dinella, Gabriel Ryan, Todd Mytkowicz et al. 2022. TOGA: A Neural Method for Test Oracle Generation. \emph{IEEE/ACM International Conference on Software Engineering (ICSE), 2130--2141}. \url{https://doi.org/10.1145/3510003.3510141}.
 
 \bibitem{hossain2023} Soneya Binta Hossain, Antonio Filieri, Matthew B. Dwyer et al. 2023. Neural-Based Test Oracle Generation: A Large-scale Evaluation and Lessons Learned. \emph{ACM Joint European Software Engineering Conference and Symposium on the Foundations of Software Engineering}. \url{https://doi.org/10.1145/3611643.3616265}.
 
-\bibitem{konstantinou2024} Michael Konstantinou, Renzo Degiovanni, Mike Papadakis. 2024. Do LLMs generate test oracles that capture the actual or the expected program behaviour?. \emph{Preprint}. \url{https://arxiv.org/abs/2410.21136}.
+\bibitem{konstantinou2024} Michael Konstantinou, Renzo Degiovanni, Mike Papadakis. 2024. Do LLMs generate test oracles that capture the actual or the expected program behaviour? \emph{Preprint}. \url{https://arxiv.org/abs/2410.21136}.
 
-\bibitem{molinelli2025} Davide Molinelli, Luca Di Grazia, Alberto Martin-Lopez et al. 2025. Do LLMs Generate Useful Test Oracles? An Empirical Study with an Unbiased Dataset. \emph{IEEE/ACM International Conference on Automated Software Engineering, 278-290}. \url{https://homes.cs.washington.edu/~mernst/pubs/neurosymbolic-oracles-ase2025-abstract.html}.
+\bibitem{molinelli2025} Davide Molinelli, Luca Di Grazia, Alberto Mart\'in-L\'opez et al. 2025. Do LLMs Generate Useful Test Oracles? An Empirical Study with an Unbiased Dataset. \emph{IEEE/ACM International Conference on Automated Software Engineering (ASE), 278--290}. \url{https://doi.org/10.1109/ASE63991.2025.00031}.
 
-\bibitem{ouedraogo2024} Wendkuuni C. Ouedraogo, Kader Kabore, Yewei Song et al. 2024. LLMs and Prompting for Unit Test Generation: A Large-Scale Evaluation. \emph{IEEE/ACM International Conference on Automated Software Engineering, 2464-2465}. \url{https://doi.org/10.1145/3691620.3695330}.
+\bibitem{ouedraogo2024} Wendkuuni C. Ou\'edraogo, Kader Kabore, Yewei Song et al. 2024. LLMs and Prompting for Unit Test Generation: A Large-Scale Evaluation. \emph{IEEE/ACM International Conference on Automated Software Engineering, 2464--2465}. \url{https://doi.org/10.1145/3691620.3695330}.
 
 \bibitem{kogler2026bench} Leon Kogler, Stefan Hangler, Maximilian Ehrhart et al. 2026. RESTestBench: A Benchmark for Evaluating the Effectiveness of LLM-Generated REST API Test Cases from NL Requirements. \emph{EASE 2026 author manuscript}. \url{https://arxiv.org/abs/2604.25862}.
 
@@ -451,15 +419,15 @@ For the vague filtered method, zero unsupported assertions means zero among 17 r
 
 \bibitem{qi2026} Binhang Qi, Yiming Liu, Yun Lin et al. 2026. Benchmarking LLM Agents for Behaviorally Adequate Test Generation from Software Requirements. \emph{Preprint}. \url{https://arxiv.org/abs/2610.36584}.
 
-\bibitem{kogler2025restifai} Leon Kogler, Maximilian Ehrhart, Benedikt Dornauer et al. 2025. RESTifAI: LLM-Based Workflow for Reusable REST API Testing. \emph{accepted ICSE 2026 demonstration}. \url{https://arxiv.org/abs/2512.08706}.
+\bibitem{kogler2025restifai} Leon Kogler, Maximilian Ehrhart, Benedikt Dornauer et al. 2026. RESTifAI: LLM-Based Workflow for Reusable REST API Testing. \emph{IEEE/ACM International Conference on Software Engineering: Companion Proceedings (ICSE-Companion), 24--28}. \url{https://doi.org/10.1145/3774748.3787598}.
 
 \bibitem{golmohammadi2024} Amid Golmohammadi, Man Zhang, Andrea Arcuri. 2024. Testing RESTful APIs: A Survey. \emph{ACM Transactions on Software Engineering and Methodology 33(1)}. \url{https://doi.org/10.1145/3617175}.
 
-\bibitem{martinlopez2021} Alberto Martin-Lopez, Sergio Segura, Antonio Ruiz-Cortes. 2021. RESTest: Automated Black-Box Testing of RESTful Web APIs. \emph{ACM International Symposium on Software Testing and Analysis}. \href{https://personal.us.es/amarlop/wp-content/uploads/2021/06/RESTest-Automated-Black-Box-Testing-of-RESTful-Web-APIs.pdf}{Author manuscript}.
+\bibitem{martinlopez2021} Alberto Mart\'in-L\'opez, Sergio Segura, Antonio Ruiz-Cort\'es. 2021. RESTest: Automated Black-Box Testing of RESTful Web APIs. \emph{ACM SIGSOFT International Symposium on Software Testing and Analysis (ISSTA), 682--685}. \url{https://doi.org/10.1145/3460319.3469082}.
 
-\bibitem{bartocci2023} Ezio Bartocci, Leonardo Mariani, Dejan Nickovic et al. 2023. Property-Based Mutation Testing. \emph{IEEE International Conference on Software Testing, Verification and Validation, 222-233}. \url{https://doi.org/10.1109/ICST57152.2023.00029}.
+\bibitem{bartocci2023} Ezio Bartocci, Leonardo Mariani, Dejan Nickovic et al. 2023. Property-Based Mutation Testing. \emph{IEEE International Conference on Software Testing, Verification and Validation, 222--233}. \url{https://doi.org/10.1109/ICST57152.2023.00029}.
 
-\bibitem{papadakis2019} Mike Papadakis, Marinos Kintis, Jie Zhang et al. 2019. Mutation Testing Advances: An Analysis and Survey. \emph{Advances in Computers 112, 275-378}. \url{https://doi.org/10.1016/bs.adcom.2018.03.015}.
+\bibitem{papadakis2019} Mike Papadakis, Marinos Kintis, Jie Zhang et al. 2019. Mutation Testing Advances: An Analysis and Survey. \emph{Advances in Computers 112, 275--378}. \url{https://doi.org/10.1016/bs.adcom.2018.03.015}.
 
 \bibitem{cunha2026} Alcino Cunha, Nuno Macedo. 2026. Validating Formal Specifications with LLM-generated Test Cases. \emph{Preprint}. \url{https://arxiv.org/abs/2510.23350}.
 
@@ -479,14 +447,30 @@ For the vague filtered method, zero unsupported assertions means zero among 17 r
 
 \bibitem{qwen7b2024} Qwen Team. 2024. Qwen2.5-7B-Instruct-GGUF. \emph{Official model card}. \url{https://huggingface.co/Qwen/Qwen2.5-7B-Instruct-GGUF}.
 
-\bibitem{ding2026} Fei Ding. 2026. What the Specification Did Not Say: Specification-Oracle Gaps in Test-Graded Coding-Agent Benchmarks. \emph{arXiv:2610.30635}. \url{https://arxiv.org/abs/2610.30635}.
+\bibitem{ding2026} Fei Ding. 2026. What the Specification Did Not Say: Specification-Oracle Gaps in Test-Graded Coding-Agent Benchmarks. \emph{Preprint}. \url{https://arxiv.org/abs/2610.30635}.
 
-\bibitem{madani2026} Pedram Madani, Maria Chernigovskaya, Abdulrahman Nahhas, Klaus Turowski. 2026. Requirements Sufficiency Gating for LLM-Assisted Automation: When Should Generation Proceed?. \emph{IEEE International Requirements Engineering Conference}. \url{https://doi.org/10.1109/RE68928.2026.00028}.
+\bibitem{madani2026} Mohammadamin Madani, Abdulrahman Nahhas, Maria Chernigovskaya et al. 2026. Requirements Sufficiency Gating for LLM-Assisted Automation: When Should Generation Proceed? \emph{IEEE International Requirements Engineering Conference (RE)}. \url{https://doi.org/10.1109/RE68928.2026.00028}.
 
 \bibitem{mughal2026} Ali Hassaan Mughal, Muhammad Bilal. 2026. LLM-Based Test Oracles: Source-of-Authority Taxonomy---A Systematic Literature Review. \emph{IEEE Access 14}. \url{https://doi.org/10.1109/ACCESS.2026.3729738}.
 
-\bibitem{togll2025} Soneya Binta Hossain, Matthew B. Dwyer. 2025. TOGLL: Correct and Strong Test Oracle Generation with LLMs. \emph{IEEE/ACM International Conference on Software Engineering}. \url{https://ieeexplore.ieee.org/document/11029748}.
+\bibitem{togll2025} Soneya Binta Hossain, Matthew B. Dwyer. 2025. TOGLL: Correct and Strong Test Oracle Generation with LLMs. \emph{IEEE/ACM International Conference on Software Engineering (ICSE), 1475--1487}. \url{https://doi.org/10.1109/ICSE55347.2025.00098}.
 
-\bibitem{togbench2026} Tasfia Tasnim, Matthew B. Dwyer, Soneya Binta Hossain. 2026. TOGBench: A Developer-Written Multi-Variant Dataset and Benchmark Suite for Test Oracle Generation. \emph{ACM International Conference on AI-Powered Software}. \url{https://doi.org/10.1145/3805760.3814927}.
+\bibitem{togbench2026} Tasfia Tasnim, Matthew B. Dwyer, Soneya Binta Hossain. 2026. TOGBench: A Developer-Written Multi-Variant Dataset and Benchmark Suite for Test Oracle Generation. \emph{ACM International Conference on AI-Powered Software (AIware)}. \url{https://doi.org/10.1145/3805760.3814927}.
+
+\bibitem{berry2004} Daniel M. Berry, Erik Kamsties. 2004. Ambiguity in Requirements Specification. \emph{Perspectives on Software Requirements, Springer, 7--44}. \url{https://doi.org/10.1007/978-1-4615-0465-8_2}.
+
+\bibitem{ezzini2022} Saad Ezzini, Sallam Abualhaija, Chetan Arora et al. 2022. Automated Handling of Anaphoric Ambiguity in Requirements: A Multi-solution Study. \emph{IEEE/ACM International Conference on Software Engineering (ICSE), 187--199}. \url{https://doi.org/10.1145/3510003.3510157}.
+
+\bibitem{elyaniv2010} Ran El-Yaniv, Yair Wiener. 2010. On the Foundations of Noise-free Selective Classification. \emph{Journal of Machine Learning Research 11, 1605--1641}. \url{https://www.jmlr.org/papers/v11/el-yaniv10a.html}.
+
+\bibitem{wen2025} Bingbing Wen, Jihan Yao, Shangbin Feng et al. 2025. Know Your Limits: A Survey of Abstention in Large Language Models. \emph{Transactions of the Association for Computational Linguistics 13, 529--556}. \url{https://doi.org/10.1162/tacl_a_00754}.
+
+\bibitem{mu2024clarify} Fangwen Mu, Lin Shi, Song Wang et al. 2024. ClarifyGPT: A Framework for Enhancing LLM-based Code Generation via Requirements Clarification. \emph{Proceedings of the ACM on Software Engineering 1(FSE), Article 103}. \url{https://doi.org/10.1145/3660810}.
+
+\bibitem{sallou2024} June Sallou, Thomas Durieux, Annibale Panichella. 2024. Breaking the Silence: The Threats of Using LLMs in Software Engineering. \emph{IEEE/ACM International Conference on Software Engineering: New Ideas and Emerging Results (ICSE-NIER), 102--106}. \url{https://doi.org/10.1145/3639476.3639764}.
+
+\bibitem{harman2025ach} Mark Harman, Jillian Ritchey, Inna Harper et al. 2025. Mutation-Guided LLM-based Test Generation at Meta. \emph{ACM International Conference on the Foundations of Software Engineering (FSE Companion), 188--199}. \url{https://doi.org/10.1145/3696630.3728544}.
+
+\bibitem{bodicoat2025} Adam Bodicoat, Gunel Jahangirova, Valerio Terragni. 2025. Understanding LLM-Driven Test Oracle Generation. \emph{ACM/IEEE International Conference on AI-Powered Software (AIware)}. \url{https://doi.org/10.1109/AIware69974.2025.00011}.
 \end{thebibliography}
 \end{document}
