@@ -1,0 +1,158 @@
+{
+  "repository": "https://github.com/casablancahotelsoftware/RESTestBench",
+  "commit": "4decc1e36ea3dd41b64ce3e3ac6a85bc72df36ae",
+  "spec_source_path": "services/todoapp/spec.json",
+  "spec_source_sha256": "5d509f1a17eb8935d4335a8310c0bc5e459e3b2147aa9ff37a1134963dfaa2a1",
+  "status_candidates": [
+    "http_200",
+    "http_400",
+    "http_401",
+    "http_403",
+    "http_404",
+    "http_422",
+    "success",
+    "denied"
+  ],
+  "pairs": [
+    {
+      "id": 2,
+      "source_path": "data/requirements/todoapp/requirement_2.json",
+      "source_sha256": "42a7f3c43a90757aac91f319ae286c03f5d9ce3351610965ea9293339ca50411",
+      "path": "/todos",
+      "method": "post",
+      "fixture": "Authenticate an ordinary user. Call POST /todos with the title omitted. Evaluate the response from that POST.",
+      "precise": "Register a user and login to get an access token. Call POST /todos with an empty or missing title field. Verify that the response status code is 400 Bad Request and the response body contains a validation error indicating 'The Title field is required.'",
+      "vague": "Creating a todo without a title returns a validation error"
+    },
+    {
+      "id": 3,
+      "source_path": "data/requirements/todoapp/requirement_3.json",
+      "source_sha256": "efd75e7da29b7de8df10a25661257b1f3c12bc698f3eacc69ebb83322b3812c2",
+      "path": "/todos/{id}",
+      "method": "get",
+      "fixture": "Authenticate an ordinary user and create an incomplete todo titled My Test Todo. Call GET using its ID. Evaluate the response from that GET.",
+      "precise": "Register a user and login. Create a todo with title 'My Test Todo'. Use the returned todo ID to call GET /todos/{id}. Verify the response status is 200 OK, the returned todo has the same ID and title 'My Test Todo', and isComplete is false.",
+      "vague": "Getting a specific todo by ID returns the correct todo"
+    },
+    {
+      "id": 6,
+      "source_path": "data/requirements/todoapp/requirement_6.json",
+      "source_sha256": "8727bfd9e016eb9a1cd95c34ea7eefd6a317aa004e7c9d6d69af3f0d10e65eb4",
+      "path": "/todos/{id}",
+      "method": "delete",
+      "fixture": "Authenticate an ordinary user and create a todo. DELETE it by ID, then retrieve it to verify removal. Evaluate only the response from DELETE.",
+      "precise": "Register a user and login. Create a todo with title 'Todo to Delete' and note the ID. Call DELETE /todos/{id}. Verify the response status is 200 OK. Then call GET /todos/{id} and verify the response is 404 Not Found (todo no longer exists).",
+      "vague": "Deleting a todo removes it from the database"
+    },
+    {
+      "id": 9,
+      "source_path": "data/requirements/todoapp/requirement_9.json",
+      "source_sha256": "a48518fe8d9016ea7b38b5e778b8cdb803f088e3eb7ddde763c680d8eb4f1e5e",
+      "path": "/todos/{id}",
+      "method": "put",
+      "fixture": "Authenticate an ordinary user and create an incomplete todo. PUT with the same ID, title Updated Todo, and isComplete true, then retrieve it. Evaluate only the response from PUT.",
+      "precise": "Register a user and login. Create a todo with title 'Original Todo'. The todo should have isComplete=false. Call PUT /todos/{id} with isComplete=true and title 'Updated Todo'. Verify response is 200 OK. Then call GET /todos/{id} and verify isComplete is now true and title is 'Updated Todo'.",
+      "vague": "Updating a todo correctly changes its fields"
+    }
+  ],
+  "screened_out": {
+    "1": "The requirement is about access to only the current user's todos.",
+    "4": "Same GET route and method as the earlier eligible pair 3.",
+    "5": "The requirement is about access to another user's todo.",
+    "7": "Same DELETE route and method as the earlier eligible pair 6.",
+    "8": "The requirement is about deleting another user's todo.",
+    "10": "Same PUT route and method as the earlier eligible pair 9.",
+    "11": "Same PUT route and method as the earlier eligible pair 9.",
+    "12": "The requirement is about updating another user's todo.",
+    "13": "The requirement is about registering a user.",
+    "14": "The requirement is about authentication."
+  },
+  "contract": {
+    "paths": {
+      "/todos": {
+        "post": {
+          "operationId": "todos-create",
+          "responses": {
+            "201": {
+              "description": "Todo created successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/TodoItem"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Bad Request - validation error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ValidationProblemDetails"
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized"
+            }
+          }
+        }
+      },
+      "/todos/{id}": {
+        "get": {
+          "operationId": "todos-get_by_id",
+          "responses": {
+            "200": {
+              "description": "Todo found",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/TodoItem"
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "404": {
+              "description": "Todo not found"
+            }
+          }
+        },
+        "delete": {
+          "operationId": "todos-delete",
+          "responses": {
+            "200": {
+              "description": "Todo deleted successfully"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "404": {
+              "description": "Todo not found (or not owned by user)"
+            }
+          }
+        },
+        "put": {
+          "operationId": "todos-update",
+          "responses": {
+            "200": {
+              "description": "Todo updated successfully"
+            },
+            "400": {
+              "description": "Bad Request - ID mismatch"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "404": {
+              "description": "Todo not found"
+            }
+          }
+        }
+      }
+    }
+  }
+}

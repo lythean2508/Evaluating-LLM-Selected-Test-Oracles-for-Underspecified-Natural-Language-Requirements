@@ -1,0 +1,18 @@
+{
+  "2": {
+    "precise": {"supported": ["http_400", "denied"], "rationale": "The measured POST explicitly returns 400 Bad Request for the missing title."},
+    "vague": {"supported": ["denied"], "rationale": "The input must be rejected as invalid, with the status code left open."}
+  },
+  "3": {
+    "precise": {"supported": ["http_200", "success"], "rationale": "The measured GET explicitly succeeds with status 200."},
+    "vague": {"supported": ["success"], "rationale": "Returning the requested existing todo requires a successful GET. The body identity check is outside the menu."}
+  },
+  "6": {
+    "precise": {"supported": ["http_200", "success"], "rationale": "The DELETE explicitly returns 200. The 404 belongs to the later verification GET."},
+    "vague": {"supported": ["success"], "rationale": "The fixture calls DELETE on an existing todo and the requirement specifies a successful deletion. Persistence is outside the status menu."}
+  },
+  "9": {
+    "precise": {"supported": ["http_200", "success"], "rationale": "The PUT explicitly returns 200. The later GET verifies the new fields."},
+    "vague": {"supported": ["success"], "rationale": "The fixture calls PUT on an existing todo with valid fields and the requirement specifies a successful update. Field equality is outside the menu."}
+  }
+}
