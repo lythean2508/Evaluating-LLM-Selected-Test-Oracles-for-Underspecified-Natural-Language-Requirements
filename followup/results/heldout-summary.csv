@@ -1,0 +1,13 @@
+model,variant,method,suites,selected,supported_available,supported_selected,unsupported_selected,empty,supported_raw,supported_removed,supported_rules_only,supported_missed_by_both
+qwen-0.5b,precise,llm,12,49,24,7,42,2,,,,
+qwen-0.5b,precise,llm+gate,12,9,24,7,2,6,7,0,14,3
+qwen-0.5b,precise,rules,4,8,8,7,1,0,,,,
+qwen-0.5b,vague,llm,12,34,12,5,29,6,,,,
+qwen-0.5b,vague,llm+gate,12,0,12,0,0,12,5,5,0,7
+qwen-0.5b,vague,rules,4,0,4,0,0,4,,,,
+qwen-7b,precise,llm,12,32,24,13,19,0,,,,
+qwen-7b,precise,llm+gate,12,13,24,10,3,2,13,3,11,0
+qwen-7b,precise,rules,4,8,8,7,1,0,,,,
+qwen-7b,vague,llm,12,33,12,3,30,0,,,,
+qwen-7b,vague,llm+gate,12,0,12,0,0,12,3,3,0,9
+qwen-7b,vague,rules,4,0,4,0,0,4,,,,

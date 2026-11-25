@@ -4,7 +4,9 @@
 
 This repository contains the manuscript and frozen evidence for a diagnostic pilot of requirement-supported assertion selection. Model selection, deterministic text rules, and their intersection are compared. It is not a full end-to-end test generation benchmark.
 
-This package accompanies the reviewer-revised manuscript on conservative assertion selection from underspecified natural-language requirements. The revision date is 20 November 2026.
+This package accompanies the manuscript on conservative assertion selection from underspecified natural-language requirements. The original diagnostic pilots were documented in the 20 November 2026 revision.
+
+The [paired API follow-up](followup/README.md) adds Qwen2.5-7B-Instruct, a matched 0.5B run, and a frozen-rule evaluation on four held-out TodoApp requirement pairs. The manuscript includes both experiments. The follow-up directory includes the protocol, labels, model completions, and replay command.
 
 The [annotated source guide in Vietnamese](SOURCES.md) maps the study claims to replication evidence, lists all 33 manuscript references, and links to follow-up study resources and official venue calls.
 
@@ -30,7 +32,7 @@ py -3.14 .\verify_paper_results.py score
 
 The verifier extracts the archives into a temporary directory, reruns their scoring programs, and compares the recomputed summaries with the frozen summaries. Expected output includes 58/126, 0/126, 29/126, and 42/42 for the controlled study and all six rows of the API results table. The final PASS message confirms a successful replay. The script prints the replay location for inspection.
 
-The numeric observations and model responses come from the original pilot runs. The revised manuscript adds interpretation and a future evaluation protocol. A larger-model comparison and independent human annotation remain proposed work.
+This command replays the original pilots. To score the paired model-size comparison and held-out transfer, use the [follow-up replay command](followup/README.md#recompute-the-results). Independent human annotation remains proposed work.
 
 ## Live HTTP demonstration
 
@@ -48,7 +50,7 @@ The original `verify_paper_results.py score` command and frozen data archives re
 
 ## Manuscript source
 
-Open `paper.tex` with XeLaTeX and the ACM `acmart` class. Keep `api-rates.pdf` beside the source. Compile twice to resolve citations and cross-references. The reference list is embedded in the source. `references.bib` provides a separate reusable bibliography.
+Open `paper.tex` with XeLaTeX and the ACM `acmart` class. Keep `api-rates.pdf` beside the source and `followup/manuscript-results.tex` in the follow-up directory. Compile twice to resolve citations and cross-references. The reference list is embedded in the source. `references.bib` provides a separate reusable bibliography.
 
 The figure was generated from the frozen API summary. The manuscript contains 33 bibliography entries with visible DOI links or source URLs. `references.json` retains the checked source metadata. `audit.json` records the pilot counts, the benchmark commit, the data hashes, and the English-named verifier hash. The two English-named archives have the same bytes as their original counterparts.
 

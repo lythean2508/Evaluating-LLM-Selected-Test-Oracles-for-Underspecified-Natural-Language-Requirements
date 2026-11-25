@@ -1,0 +1,43 @@
+\subsection{Matched FastAPI Comparison}
+Table~\ref{tab:api-model-size} shows the comparisons under the matched runtime. For vague requirements, 7B increases raw supported coverage from 31/48 to 36/48 and filtered coverage from 18/48 to 20/48. The intersection retains 18/31 supported choices at 0.5B and 20/36 at 7B, about 58\% and 56\%, respectively. It removes all observed unsupported selections on FastAPI. Qualified detections for the vague filtered configuration move from 22/51 to 21/51. For precise text, filtered coverage moves from 50/81 to 47/81 and qualified detections from 36/51 to 37/51. The larger model improves some outcomes while leaving a supported-retention bottleneck.
+
+\begin{table}[t]
+\caption{Matched FastAPI model comparison under Vulkan. Coverage is supported selected over available. Kills are qualified detections over 51 repeated mutant opportunities.}
+\label{tab:api-model-size}
+\centering\small
+\begin{tabular}{llrrrr}
+\toprule
+ & & \multicolumn{2}{c}{Coverage} & \multicolumn{2}{c}{Kills}\\
+Variant & Model & Raw & Filtered & Raw & Filtered\\
+\midrule
+Precise & 0.5B & 50/81 & 50/81 & 7/51 & 36/51\\
+Precise & 7B & 47/81 & 47/81 & 18/51 & 37/51\\
+Vague & 0.5B & 31/48 & 18/48 & 2/51 & 22/51\\
+Vague & 7B & 36/48 & 20/48 & 5/51 & 21/51\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The matched Vulkan 0.5B run returns the same discrete output as the archived CPU run on 16/36 FastAPI calls. The 0.5B CPU rerun with the archived settings agrees on all 36 calls. The model-size comparison uses the Vulkan baseline because both hardware path and cache setting differ from the archived run.
+
+\subsection{Held-out TodoApp Requirements}
+Table~\ref{tab:heldout-status} reports status-oracle outcomes. On precise text, 7B raises raw supported coverage from 7/24 to 13/24 and filtered coverage from 7/24 to 10/24. On vague text, 0.5B and 7B select 5/12 and 3/12 supported opportunities, respectively. The frozen rules select no status assertion on any vague requirement, so both models produce 12/12 empty suites after filtering. This is a rule-coverage limit in the held-out task.
+
+\begin{table}[t]
+\caption{Held-out TodoApp status assertions. Coverage uses available supported candidates. Unsupported uses all filtered selections. Empty uses all filtered suites. A dash marks zero selected assertions.}
+\label{tab:heldout-status}
+\centering\small
+\begin{tabular}{llrrrr}
+\toprule
+ & & \multicolumn{2}{c}{Coverage} & \multicolumn{2}{c}{Filtered}\\
+Variant & Model & Raw & Filtered & Unsupported & Empty\\
+\midrule
+Precise & 0.5B & 7/24 & 7/24 & 2/9 & 6/12\\
+Precise & 7B & 13/24 & 10/24 & 3/13 & 2/12\\
+Vague & 0.5B & 5/12 & 0/12 & -- & 12/12\\
+Vague & 7B & 3/12 & 0/12 & -- & 12/12\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+In one deterministic pass, rules cover 7/8 supported precise candidates and contribute one unsupported selection out of eight. For the precise deletion requirement, HTTP 404 belongs to a follow-up retrieval. The rule sees 404 in the text and selects a rejection check for the measured DELETE. Both filtered configurations retain that unsupported check in some seeds. Rule agreement therefore does not establish requirement support on the held-out service. The new sample is small and measures status selection only.

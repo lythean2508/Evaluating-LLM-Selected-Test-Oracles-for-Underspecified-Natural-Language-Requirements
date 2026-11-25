@@ -54,23 +54,31 @@ def make_prompt(requirement, scenario, spec):
     )
 
 
-def collect(output, url):
-    dataset = texts()
-    spec = read_json(REPO / 'services/fastapi/spec.json')
+def collect(output, url, *, dataset=None, scenarios=SCENARIOS, spec=None, cache_prompt=False):
+    if dataset is None:
+        dataset = texts()
+    if spec is None:
+        spec = read_json(REPO / 'services/fastapi/spec.json')
     path = output / 'runs.jsonl'
-    completed = {(r['id'], r['variant'], r['seed']) for r in read_lines(path)} if path.exists() else set()
+    previous = read_lines(path) if path.exists() else []
+    completed = {(r['id'], r['variant'], r['seed']): r for r in previous}
+    if len(completed) != len(previous):
+        raise ValueError('Duplicate model runs')
     opener = build_opener(ProxyHandler({}))
     with path.open('a', encoding='utf-8') as sink:
-        for req_id, variant, seed in product(SCENARIOS, VARIANTS, SEEDS):
-            if (req_id, variant, seed) in completed:
-                continue
-            scenario = SCENARIOS[req_id]
+        for req_id, variant, seed in product(scenarios, VARIANTS, SEEDS):
+            scenario = scenarios[req_id]
             settings = {
                 'prompt': make_prompt(dataset[req_id][variant], scenario, spec),
                 'n_predict': 32, 'seed': seed, 'temperature': 0.3, 'top_k': 40,
-                'top_p': 0.95, 'cache_prompt': False,
+                'top_p': 0.95, 'cache_prompt': cache_prompt,
                 'grammar': 'root ::= label ("," label){' + str(len(scenario.checks) - 1) + '}\nlabel ::= [YN]',
             }
+            existing = completed.get((req_id, variant, seed))
+            if existing is not None:
+                if existing['settings'] != settings:
+                    raise ValueError(f'Saved settings differ for R{req_id}/{variant}/{seed}')
+                continue
             start = perf_counter()
             request = Request(url.rstrip('/') + '/completion', json.dumps(settings).encode(),
                               {'Content-Type': 'application/json'})
@@ -172,10 +180,11 @@ def main():
     parser.add_argument('stage', choices=('generate', 'score'))
     parser.add_argument('--output', type=Path, default=HERE / 'results')
     parser.add_argument('--url', default='http://127.0.0.1:18786')
+    parser.add_argument('--cache-prompt', action='store_true')
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
     if args.stage == 'generate':
-        collect(args.output, args.url)
+        collect(args.output, args.url, cache_prompt=args.cache_prompt)
     else:
         score(args.output)
 

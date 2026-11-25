@@ -7,3 +7,5 @@ The manuscript uses the ACM `acmart` LaTeX class, which is an external build dep
 This notice does not relicense third-party works or grant an additional license to the authors' original manuscript and code.
 
 The HTTP source archive includes the frozen RESTestBench excerpt and FastAPI template source with their preserved licenses. Shell files use LF line endings for Linux containers. It contains an `.env.example` template; local keys are generated at runtime. Local `.env`, virtual environments, database volumes and Docker images are excluded. The expanded `api/RESTestBench/LICENSE` also preserves the upstream AGPL-3.0 license.
+
+The paired API follow-up includes TodoApp requirements and excerpts of their OpenAPI response contract from the same pinned RESTestBench commit. The source paths and upstream file hashes are recorded in `followup/heldout-requirements.json`. The upstream excerpts are available under [AGPL-3.0](api/RESTestBench/LICENSE).
