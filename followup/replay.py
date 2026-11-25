@@ -1,6 +1,7 @@
 """Replay the Qwen model-size comparison and held-out transfer from saved runs."""
 
 import argparse
+from collections import defaultdict
 import csv
 from pathlib import Path
 import shutil
@@ -35,9 +36,28 @@ def verify_api_masks(records):
             raise ValueError(f'FastAPI selections disagree with raw completion for R{req_id}/{variant}/{seed}')
 
 
-def read_summary(path):
+def read_rows(path):
     with path.open(encoding='utf-8-sig', newline='') as stream:
         return list(csv.DictReader(stream))
+
+
+def write_summary(path, rows):
+    with path.open('w', encoding='utf-8', newline='') as stream:
+        writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def vague_filtered_rows(output):
+    metrics = ('supported_selected', 'supported_available', 'killed_if_qualified', 'mutants')
+    for model in MODELS:
+        grouped = defaultdict(list)
+        for row in read_rows(output / model / 'api/comparison.csv'):
+            if row['variant'] == 'vague' and row['method'] == 'llm+gate':
+                grouped[int(row['id'])].append(row)
+        for req_id, rows in sorted(grouped.items()):
+            yield {'model': model, 'id': req_id, 'seed_evaluations': len(rows),
+                   **{name: sum(int(row[name]) for row in rows) for name in metrics}}
 
 
 def replay(results, output):
@@ -79,11 +99,9 @@ def replay(results, output):
 
     for dataset_name in DATASETS:
         combined = [{'model': model, **row} for model in MODELS
-                    for row in read_summary(output / model / dataset_name / 'summary.csv')]
-        with (output / f'{dataset_name}-summary.csv').open('w', encoding='utf-8', newline='') as stream:
-            writer = csv.DictWriter(stream, fieldnames=list(combined[0]))
-            writer.writeheader()
-            writer.writerows(combined)
+                    for row in read_rows(output / model / dataset_name / 'summary.csv')]
+        write_summary(output / f'{dataset_name}-summary.csv', combined)
+    write_summary(output / 'api-vague-filtered-by-requirement.csv', list(vague_filtered_rows(output)))
 
 
 def main():

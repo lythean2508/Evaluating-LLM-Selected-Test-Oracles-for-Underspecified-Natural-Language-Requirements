@@ -11,13 +11,13 @@ This follow-up runs Qwen2.5-0.5B-Instruct and Qwen2.5-7B-Instruct on paired API 
 
 ## Recompute the results
 
-Run from the repository root with Python 3.11 or later. The replay reads the saved model completions, checks the frozen rules and paired parameters, and writes the four per-cohort and per-model result sets plus the two combined summaries. It uses the archived FastAPI responses.
+Run from the repository root with Python 3.11 or later. The replay checks the frozen rules and paired parameters and scores the saved completions against the archived FastAPI responses or the TodoApp labels. It also writes the comparison by requirement for the filtered vague FastAPI runs.
 
 ```text
 python followup/replay.py --output followup-replay
 ```
 
-[FastAPI summaries](results/api-summary.csv) · [TodoApp summaries](results/heldout-summary.csv) · [Execution provenance](environment.json)
+[FastAPI summaries](results/api-summary.csv) · [FastAPI vague results by requirement](results/api-vague-filtered-by-requirement.csv) · [TodoApp summaries](results/heldout-summary.csv) · [Execution provenance](environment.json)
 
 ## Regenerate model completions
 

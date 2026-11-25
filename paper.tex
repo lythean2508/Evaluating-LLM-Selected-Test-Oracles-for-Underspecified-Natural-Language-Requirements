@@ -48,7 +48,7 @@ These distinctions matter when evaluating language-model-generated tests. A suit
 
 We examine this issue in a diagnostic pilot study with a deliberately constrained task. Inputs, API request sequences, and candidate assertion menus are fixed. A small local model selects expected outcomes. A deterministic rule selector separately examines the visible requirement. Their intersection produces a filtered suite. The contribution is to quantify the trade-off between requirement support and supported retention under a fixed candidate space, with nonemptiness and qualified fault detection assessed jointly. The empirical scope is the selection stage of LLM-based test case generation from natural-language requirements.
 
-We ask three research questions. \textbf{RQ1} asks how many selected assertions lack support in the requirement. \textbf{RQ2} asks how many supported assertions survive filtering. \textbf{RQ3} asks how many seeded faults are detected by nonempty, supported suites that pass the reference implementation. The answers come from two complementary pilots, a finite controlled-language experiment and a sample of stateful REST API scenarios.
+\textbf{RQ1} asks how many selected assertions lack support in the requirement. \textbf{RQ2} asks how many supported assertions survive filtering. \textbf{RQ3} asks how many seeded faults are detected by nonempty, supported suites that pass the reference implementation. \textbf{RQ4} asks how model size changes retention and qualified fault detection in the FastAPI pilot, and how frozen rules transfer to held-out TodoApp requirements. The controlled and API pilots address RQ1--RQ3. The paired API study addresses RQ4.
 
 The controlled experiment contains 12 pairs of complete and incomplete threshold requirements, seven inputs per variant, two generation prompts, and three seeds, giving 144 model completions. The API experiment uses six precise/vague requirement pairs and 17 associated FastAPI mutants from RESTestBench \cite{kogler2026bench,restestrepo}. It contains 36 model completions and 23 recorded API observations. The API observations are shared when evaluating the three selection configurations.
 
@@ -71,7 +71,7 @@ A mutant is an intentionally modified program version. Mutation testing can expo
 \subsection{Search Scope}
 The literature search was updated on 19 November 2026. We used web-indexed scholarly searches with title verification through author repositories, arXiv, publisher pages, official model documentation, and research artifact repositories. Query families combined natural-language requirements with test generation, acceptance testing, assertion generation, test oracles, underspecification, ambiguity, grounding, and mutation testing. Searches also used the titles of the closest studies to identify related work and artifacts.
 
-We retained sources with direct relevance to requirement-driven generation, semantic oracle evaluation, experimental fault detection, or the implementation used in the pilots. The resulting bibliography contains 27 scholarly publications or manuscripts and six technical or research-artifact sources. The search is a targeted narrative synthesis. Its coverage is bounded by the queries, accessible source records, and the search date. The companion source register records publication type, direct links, and each source's role. A separate survey artifact lists 267 primary RBTG studies for further screening \cite{rbtgdata}.
+We retained sources relevant to requirement-driven generation, semantic oracle evaluation, fault detection, or the pilot implementation. The bibliography contains 28 scholarly publications or manuscripts and six technical or research-artifact sources. The targeted narrative synthesis is bounded by the queries, accessible records, and the search date. The source register records publication types, links, and roles. A survey artifact lists 267 primary RBTG studies for further screening \cite{rbtgdata}.
 
 \subsection{From Requirements to Test Artifacts}
 Requirements-based testing has a substantial history across requirement representations and generation methods \cite{yang2025}. A recent survey of AI-driven generation identifies ambiguity, traceability, and hallucination control as continuing concerns \cite{folorunsho2026}. UMTG derives executable acceptance tests from natural-language use cases and a domain model, using NLP and formal constraints \cite{wang2022umtg}. CiRA extracts conditionals from informal requirements and converts their relationships into acceptance tests \cite{fischbach2023}. These approaches motivate explicit links between a requirement's conditions and the checks a test performs.
@@ -171,6 +171,7 @@ The controlled archive contains requirement definitions, reference descriptions,
 For this expanded manuscript, the stored raw records were rescored and the aggregate tables were checked against the two-page paper. Per-requirement and per-seed results were derived from the same records. The additional breakdowns are secondary analyses of the existing pilot runs. Literature results are attributed to their respective sources and are used to position the study.
 
 \subsection{Measures and Counting Units}
+\label{sec:measures}
 For a selector $S$ and support set $G_r$, we count $|S\cap G_r|$ supported selections and $|S\setminus G_r|$ unsupported selections. Supported coverage divides supported selections by available supported candidates. Unsupported proportion divides unsupported selections by all selected assertions. Both aggregate numerators and denominators are summed over the relevant scenarios and seeds.
 
 A suite is qualified when it is nonempty, every selected assertion is supported, and every assertion passes on the original observation. Write this predicate as $Q(S,r)$. A mutant contributes one qualified detection when $Q(S,r)$ holds and at least one selected assertion fails on that mutant. The same suite can detect several mutants, while each mutant contributes at most once per scenario/seed evaluation.
@@ -280,7 +281,7 @@ For seeds 11, 23, and 47, the vague filtered configuration retains five, seven, 
 
 The small repeated sample supports descriptive counts. Requirements and their mutants form related observations, and seeds repeat the same tasks. Statistical inference about new projects would require a broader design with appropriate grouping and repeated execution.
 
-\section{API Follow-up with a Larger Model and Frozen Rules}
+\section{RQ4: A Larger Model and Frozen Rules}
 \label{sec:followup}
 
 \subsection{Paired Design}
@@ -336,7 +337,7 @@ The experimental harness supplies action sequences, authentication setup, candid
 An extended system could attach an evidence span to each assertion, distinguish assumptions from stated obligations, and request clarification for a missing code or boundary. Evaluating that design would require measures for evidence accuracy, reviewer effort, and the handling of empty selections. These are proposed extensions arising from the observed failure modes.
 
 \subsection{Independent Annotation}
-An independent annotation exercise should ask two human raters to label candidates using the visible requirement variant, fixed scenario, and a written interpretation policy. The FastAPI menu contains 44 candidates per variant, yielding 88 binary decisions per rater. Initial labeling should blind raters to model selections, rule matches, and mutant outcomes. Report the confusion matrix, raw agreement, and Cohen's kappa before adjudication, then rescore all configurations under the adjudicated labels.
+An independent annotation exercise should ask two human raters to label candidates using the visible requirement variant, fixed scenario, and a written interpretation policy. The FastAPI menu contains 44 candidates per variant, yielding 88 binary decisions per rater. Initial labeling should blind raters to model selections, rule matches, and mutant outcomes. Report the confusion matrix, raw agreement, and Cohen's kappa for the nominal labels before adjudication \cite{cohen1960}, then rescore all configurations under the adjudicated labels.
 
 \section{Threats to Validity}
 \subsection{Construct Validity}
@@ -357,6 +358,8 @@ Recorded API outcomes are reused for every selected suite. This controls state a
 The model-size comparison uses two quantized models from one family. It covers English requirements and fixed candidate menus. FastAPI covers 17 distinct seeded faults and 51 scored opportunities per model configuration. TodoApp contributes one held-out service, four requirement pairs, and an assertion menu restricted to response status. Its labels were prepared by one annotator and training overlap was unaudited. The three seeds repeat the same tasks. Transfer to other projects, languages, model families, and assertion representations requires broader coverage.
 
 Benchmark artifacts are publicly available. Model training overlap has not been independently audited. Work using post-cutoff oracle datasets illustrates one way to examine this issue \cite{molinelli2025}. Fixed inputs and constrained decoding also change the difficulty relative to free-form test generation.
+
+A held-out fault-detection study should execute the fixed TodoApp scenarios against the original service and requirement-associated mutants, using the property-based and requirements-based mutation designs of Bartocci et al. and RESTestBench \cite{bartocci2023,kogler2026bench}. The same observations can be scored for all selectors under the qualification rule in Section~\ref{sec:measures}. Reporting associated and candidate-observable mutant counts would expose limits imposed by the status menu.
 
 The expanded analyses are descriptive. Counts repeated across seeds are dependent on the same requirements and observations. We report their exact denominators and avoid treating 51 evaluations as 51 independent software faults. Mutation operators approximate selected error mechanisms, so rates on these mutants provide scoped evidence about test behavior \cite{papadakis2019,bartocci2023}.
 
@@ -468,5 +471,7 @@ For the vague filtered method, zero unsupported assertions means zero among 17 r
 \bibitem{restestrepo} RESTestBench authors. 2026. RESTestBench replication repository. \emph{Experiment checkout at commit 4decc1e36ea3dd41b64ce3e3ac6a85bc72df36ae}. \url{https://github.com/casablancahotelsoftware/RESTestBench}.
 
 \bibitem{rbtgdata} SLR-on-RBTG authors. 2025. SLR-on-RBTG: collection of 267 primary studies. \emph{Survey companion repository}. \url{https://github.com/aimeenorwind/SLR-on-RBTG}.
+
+\bibitem{cohen1960} Jacob Cohen. 1960. A Coefficient of Agreement for Nominal Scales. \emph{Educational and Psychological Measurement 20(1), 37--46}. \url{https://doi.org/10.1177/001316446002000104}.
 \end{thebibliography}
 \end{document}

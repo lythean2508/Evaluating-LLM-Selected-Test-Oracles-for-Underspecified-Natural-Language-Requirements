@@ -8,7 +8,7 @@ This package accompanies the manuscript on conservative assertion selection from
 
 The [paired API follow-up](followup/README.md) adds Qwen2.5-7B-Instruct, a matched 0.5B run, and a frozen-rule evaluation on four held-out TodoApp requirement pairs. The manuscript includes both experiments. The follow-up directory includes the protocol, labels, model completions, and replay command.
 
-The [annotated source guide in Vietnamese](SOURCES.md) maps the study claims to replication evidence, lists all 33 manuscript references, and links to follow-up study resources and official venue calls.
+The [annotated source guide in Vietnamese](SOURCES.md) maps the study claims to replication evidence, lists the 34 manuscript references, and links to study resources and official venue calls.
 
 ## Recompute the saved results
 
@@ -52,7 +52,7 @@ The original `verify_paper_results.py score` command and frozen data archives re
 
 Open `paper.tex` with XeLaTeX and the ACM `acmart` class. Keep `api-rates.pdf` beside the source and `followup/manuscript-results.tex` in the follow-up directory. Compile twice to resolve citations and cross-references. The reference list is embedded in the source. `references.bib` provides a separate reusable bibliography.
 
-The figure was generated from the frozen API summary. The manuscript contains 33 bibliography entries with visible DOI links or source URLs. `references.json` retains the checked source metadata. `audit.json` records the pilot counts, the benchmark commit, the data hashes, and the English-named verifier hash. The two English-named archives have the same bytes as their original counterparts.
+The figure was generated from the frozen API summary. The bibliography gives DOI links or source URLs, with checked metadata in `references.json`. `audit.json` records the pilot counts, the benchmark commit, the data hashes, and the English-named verifier hash. The two English-named archives have the same bytes as their original counterparts.
 
 The archive-internal README files and data records retain their original provenance. Authors should review the scientific interpretation, annotations, and submission-specific formatting before publication.
 
